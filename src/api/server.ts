@@ -107,7 +107,10 @@ const dashboardPath = fileURLToPath(new URL("./dashboard.html", import.meta.url)
 let dashboardHtml: string | null = null;
 function getDashboard(): string {
   if (dashboardHtml == null) dashboardHtml = fs.readFileSync(dashboardPath, "utf8");
-  return dashboardHtml;
+  const keys = listClientKeys();
+  const bootstrap = JSON.stringify({ clientKeys: keys, defaultModel: config.geminiImageModel })
+    .replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+  return dashboardHtml.replace("<!-- IMGROUTER_BOOTSTRAP -->", `<script id="gatewayBootstrap" type="application/json">${bootstrap}</script>`);
 }
 
 export function startServer(): Server {
@@ -144,7 +147,7 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
   }
   // GET /  and  GET /dashboard — static single-page dashboard
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/dashboard")) {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     res.end(getDashboard());
     return;
   }

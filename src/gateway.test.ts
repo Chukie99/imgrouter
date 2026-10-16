@@ -24,7 +24,7 @@ async function request(url:string,body?:unknown,options:{key?:string;origin?:str
  Object.defineProperty(req,'socket',{value:{remoteAddress:options.remote??'127.0.0.1'}});
  let status=0,raw='';
  const res={writeHead(s:number){status=s;},end(value?:string){raw=value??'';}} as unknown as ServerResponse;
- await route(req,res);return {status,body:raw?JSON.parse(raw):null,raw};
+ await route(req,res);return {status,body:raw.startsWith("{")?JSON.parse(raw):null,raw};
 }
 ensureDefaultClientKey();
 const defaultClient=listClientKeys()[0]!;
@@ -38,6 +38,9 @@ assert.equal((await request('/models/gemini-2.5-flash-image',{}, {method:'DELETE
 const account=createAccount('provider one','provider-secret-1',5);
 const other=createAccount('provider two','provider-secret-2',5);
 const client=await request('/clientkeys',{label:'app'});assert.equal(client.status,201);const key=client.body.key;
+const dashboard=await request('/');
+assert.ok(dashboard.raw.includes('id="gatewayBootstrap"'));
+assert.ok(dashboard.raw.includes(key),'dashboard bootstrap includes the real persisted client key');
 assert.equal((await request('/v1/models')).status,401);
 assert.equal((await request('/accounts',undefined,{remote:'10.1.2.3'})).status,403);
 assert.equal((await request('/clientkeys',{}, {origin:'https://foreign.example'})).status,403);
