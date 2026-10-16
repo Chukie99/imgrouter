@@ -180,6 +180,13 @@
   @media(max-width:1100px) { .project-grid { grid-template-columns:1fr; } .pills .pill { padding:14px 12px; } }
   @media(max-width:760px) { .sidebar { position:static; width:auto; padding:18px 20px 12px; border-right:0; border-bottom:1px solid var(--line-soft); }.sidebar .brand { margin-bottom:20px; }.brand-sub,.nav-label,.sidebar-foot { display:none; }nav { flex-direction:row; gap:5px; }.nav-button { flex:1; padding:10px 8px; font-size:12px; white-space:nowrap; }.nav-button span { display:none; }.workspace { margin-left:0; }header { padding:14px 20px; gap:12px; }.breadcrumb { display:none; }main { padding:25px 20px; gap:20px; }h1 { font-size:28px; }.eyebrow { font-size:9px; }.page-heading { align-items:flex-start; }.page-heading p { max-width:230px; }#run { padding:9px 11px; }#run span { display:none; }.pills { grid-template-columns:repeat(3,minmax(0,1fr)); }.pills .pill:nth-child(3) { border-right:0; }.pills .pill:nth-child(-n+3) { border-bottom:1px solid var(--line-soft); }.card { padding:18px; }.connrow { flex-wrap:wrap; gap:8px; }.connlabel { width:100%; }.connval { font-size:11px; }.head .hint { margin-left:0; }.auto { font-size:11px; }.row .field { min-width:130px; }.row input:not([type=checkbox]) { max-width:100%; } }
 
+
+  .api-overview .conn { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px 24px; }
+  .api-overview .connrow { flex-wrap:wrap; gap:7px; }
+  .api-overview .connlabel { width:100%; }
+  .api-overview .connval { white-space:normal; overflow-wrap:anywhere; }
+  .api-overview .note { margin-top:12px; }
+  @media(max-width:760px) { .api-overview .conn { grid-template-columns:minmax(0,1fr); } }
 </style>
 </head>
 <body>
@@ -202,6 +209,40 @@
 </header>
 <main>
   <div class="page-heading"><div><div class="eyebrow">IMGROUTER / WORKSPACE</div><h1 id="viewTitle">Projects</h1><p id="viewDescription">Turn a list of prompts into a sequence of images.</p></div><button id="run" class="primary">Run queue <span aria-hidden="true">↗</span></button></div>
+  <section class="card wide api-overview">
+    <div class="head"><h2>Local API</h2><span class="hint">URL, key, and model for your apps</span></div>
+    <div class="conn">
+      <div class="connrow">
+        <span class="connlabel">Gemini URL</span>
+        <code id="gBase" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gBase">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">API key</span>
+        <code id="gKey" class="connval hot">— create one in “imgrouter API keys” —</code>
+        <button type="button" id="gReveal" class="icon" aria-pressed="false">Show</button><button type="button" class="icon" data-copysrc="gKey">Copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">Model</span>
+        <code id="gModel" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gModel">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">OpenAI URL</span>
+        <code id="gOpenai" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gOpenai">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">Access</span>
+        <label class="auto"><input type="checkbox" id="reqKey" /> require an API key for requests</label>
+      </div>
+    </div>
+    <details>
+      <summary>example request</summary>
+      <pre id="gExample" class="example"></pre>
+    </details>
+    <p class="note">imgrouter sits between your apps and Google Gemini, rotating your Gemini keys automatically so you never expose them.</p>
+  </section>
   <div id="pills" class="pills" aria-label="Queue summary"><span class="pill"><b>—</b>Loading status…</span></div>
   <p id="refreshError" class="refresh-error" role="alert" hidden></p>
   <div data-panel="projects" class="view-panel"><div class="project-grid"><section class="card">
@@ -226,11 +267,10 @@
     </section></div></div>
   <div data-panel="keys" class="view-panel" hidden><section class="card">
       <div class="head"><h2>Gemini keys</h2><span class="count" id="accCount"></span></div>
-      <p class="muted" style="margin:0 0 14px">The Google Gemini keys imgrouter rotates through. Manage provider credentials and local usage limits. Actual quotas are set by Google and may be shared across keys.</p>
+      <p class="muted" style="margin:0 0 14px">The Google Gemini keys imgrouter rotates through. Add your Gemini keys. The router manages usage limits and tracks each key’s status. Google controls actual provider quotas.</p>
       <form id="accForm" class="col">
         <div class="row">
           <input type="password" autocomplete="off" id="accKey" placeholder="Gemini API key (AIza…)" required class="grow" />
-          <input id="accLimit" type="number" min="1" placeholder="day limit" style="width:110px" />
         </div>
         <div class="row">
           <input id="accLabel" placeholder="e.g. main-project" />
@@ -242,9 +282,9 @@
       <details>
         <summary>paste many at once</summary>
         <form id="bulkForm" class="col" style="margin-top:10px">
-          <textarea id="bulkKeys" rows="4" placeholder="AIza…&#10;label,AIza…&#10;label,AIza…,5   (optional daily limit)"></textarea>
+          <textarea id="bulkKeys" rows="4" placeholder="AIza…&#10;label,AIza…&#10;label,AIza…"></textarea>
           <div class="row">
-            <span class="muted">label,key[,dayLimit] — comma / tab / pipe / space</span>
+            <span class="muted">Paste keys, or label,key — usage limits are managed by the router</span>
             <div class="spacer"></div>
             <button class="primary">Import</button>
           </div>
@@ -271,40 +311,7 @@
         <button id="accDelBlocked" class="danger icon">Delete blocked</button>
       </div>
     </section></div>
-  <div data-panel="connection" class="view-panel" hidden><div class="connection-grid">  <section class="card wide">
-    <div class="head"><h2>Your imgrouter API</h2><span class="hint">point any Gemini-native client here</span></div>
-    <div class="conn">
-      <div class="connrow">
-        <span class="connlabel">Local URL</span>
-        <code id="gBase" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gBase">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">API key</span>
-        <code id="gKey" class="connval hot">— create one in “imgrouter API keys” —</code>
-        <button type="button" class="icon" data-copysrc="gKey">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Model</span>
-        <code id="gModel" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gModel">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">OpenAI URL</span>
-        <code id="gOpenai" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gOpenai">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Access</span>
-        <label class="auto"><input type="checkbox" id="reqKey" /> require an API key for requests</label>
-      </div>
-    </div>
-    <details>
-      <summary>example request</summary>
-      <pre id="gExample" class="example"></pre>
-    </details>
-    <p class="note">imgrouter sits between your apps and Google Gemini, rotating your Gemini keys automatically so you never expose them.</p>
-  </section>
+  <div data-panel="connection" class="view-panel" hidden><div class="connection-grid">
 
 <section class="card">
       <div class="head"><h2>imgrouter API keys</h2><span class="count" id="ckCount"></span></div>
@@ -382,6 +389,7 @@
   });
 
   let clientKeys = [];
+  let showLocalKey = false;
   const revealed = new Set();
   const maskKey = (k) => (k && k.length > 16 ? `${k.slice(0, 9)}…${k.slice(-4)}` : k || "");
 
@@ -436,7 +444,7 @@
       <input type="checkbox" data-sel="${esc(a.id)}"${checked} />
       <span class="grow"><b>${esc(a.label)}</b> <span class="muted">${esc(a.id.slice(0, 8))}</span></span>
       <span class="pill ${tone}">${esc(a.status)}</span>
-      <span class="muted">${a.dayUsed}/${a.dayLimit}</span>
+      <span class="muted" title="Local router limit, not a verified Google quota">Used ${a.dayUsed} · Router limit ${a.dayLimit}/day</span>
       <span class="muted">ok ${a.okCount} · fail ${a.failCount}</span>
       <span class="muted">cool ${until(a.cooldownUntil)}</span>
       <button class="icon" data-test="${esc(a.id)}" title="Test key">test</button>
@@ -505,7 +513,7 @@
       : '<p class="empty">No keys yet — create one and hand it to your client app.</p>';
 
     const primary = keys[0]?.key;
-    $("#gKey").textContent = primary ? maskKey(primary) : "— create one in “imgrouter API keys” —";
+    $("#gKey").textContent = primary ? (showLocalKey ? primary : maskKey(primary)) : "— create one in “imgrouter API keys” —";
     $("#gKey").dataset.full = primary || "";
     renderExample();
   }
@@ -534,6 +542,12 @@
     }
   }
 
+  $("#gReveal").addEventListener("click", () => {
+    showLocalKey = !showLocalKey;
+    $("#gReveal").textContent = showLocalKey ? "Hide" : "Show";
+    $("#gReveal").setAttribute("aria-pressed", String(showLocalKey));
+    renderClientKeys(clientKeys);
+  });
   $("#ckForm").addEventListener("submit", async (ev) => {
     ev.preventDefault();
     try {
@@ -648,9 +662,8 @@
 
   $("#accForm").addEventListener("submit", async (ev) => {
     ev.preventDefault();
-    const dayLimit = $("#accLimit").value ? Number($("#accLimit").value) : undefined;
     try {
-      await api("/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#accLabel").value.trim() || "Gemini key", apiKey: $("#accKey").value, dayLimit }) });
+      await api("/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#accLabel").value.trim() || "Gemini key", apiKey: $("#accKey").value }) });
       $("#accForm").reset(); toast("Gemini key added — you can add another"); refresh();
     } catch (e) { toast(e.message, false); }
   });
@@ -700,7 +713,7 @@
   document.querySelectorAll("[data-view]").forEach(el => el.addEventListener("click", () => { location.hash = el.dataset.view; }));
   window.addEventListener("hashchange", () => selectView(location.hash.slice(1)));
   selectView(location.hash.slice(1));
-  const fieldLabels = { pTitle: "Project name", pRef: "Reference image path · optional", pStyle: "Shared visual style · optional", pPrompts: "Scene prompts · one per line", pCount: "Generic scene count · optional", accKey: "Gemini API key", accLimit: "Daily limit", accLabel: "Key label", ckLabel: "App name" };
+  const fieldLabels = { pTitle: "Project name", pRef: "Reference image path · optional", pStyle: "Shared visual style · optional", pPrompts: "Scene prompts · one per line", pCount: "Generic scene count · optional", accKey: "Gemini API key", accLabel: "Key label", ckLabel: "App name" };
   for (const [id, title] of Object.entries(fieldLabels)) {
     const input = document.getElementById(id);
     const wrapper = document.createElement("div"); wrapper.className = "field";
