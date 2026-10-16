@@ -122,8 +122,8 @@
   /* ---- lists ---- */
   .list { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
   .item { background:var(--field); border:1px solid var(--line-soft); border-radius:10px; padding:11px 13px; }
-  .item.row { flex-wrap:nowrap; }
-  .item.row .grow { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .item.row { flex-wrap:wrap; }
+  .item.row .grow { min-width:120px; overflow-wrap:anywhere; }
   .item:hover { border-color:var(--line); }
   .empty { color:var(--faint); font-size:12.5px; margin:14px 0 0; }
 
@@ -144,77 +144,96 @@
   .modal-box { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; width:min(560px,92vw); box-shadow:0 24px 60px rgba(0,0,0,.5); }
   .modal-box h3 { margin:0 0 6px; font-size:15px; }
   .keyreveal { background:var(--field); border:1px solid #4a3327; border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--accent); word-break:break-all; }
+
+  /* Workspace layout */
+  :root { --bg:#101214; --panel:#171a1d; --panel-2:#22272b; --field:#121517; --line:#343b40; --line-soft:#2a3035; --text:#edf0ed; --muted:#a4aea8; --faint:#89958e; --accent:#d6ec91; --accent-ink:#1c2811; }
+  body { font-size:14px; }
+  [hidden] { display:none !important; }
+  .sidebar { position:fixed; inset:0 auto 0 0; width:218px; padding:30px 22px; border-right:1px solid var(--line-soft); display:flex; flex-direction:column; background:#141719; }
+  .brand { gap:12px; margin-bottom:58px; }
+  .brandname { font-size:20px; letter-spacing:-.7px; line-height:1.2; }
+  .brand-sub { display:block; font-size:9px; letter-spacing:1.7px; color:var(--faint); margin-top:8px; }
+  .mark::before,.mark::after { width:19px; height:6px; border-radius:1px; }
+  .nav-label { font-size:10px; letter-spacing:1.5px; color:var(--faint); margin:0 10px 14px; }
+  nav { display:flex; flex-direction:column; gap:7px; }
+  .nav-button { text-align:left; padding:12px 11px; background:transparent; border-color:transparent; border-radius:6px; color:var(--muted); }
+  .nav-button span { font:11px ui-monospace,monospace; margin-right:12px; color:var(--faint); }
+  .nav-button.active { background:#272e24; color:var(--accent); border-color:#39442d; }
+  .nav-button.active span { color:var(--accent); }
+  .sidebar-foot { margin-top:auto; padding:16px 7px 0; border-top:1px solid var(--line-soft); font-size:12px; line-height:1.9; }
+  .sidebar-foot span { color:var(--faint); }
+  .workspace { margin-left:218px; }
+  header { position:static; padding:19px 36px; background:var(--bg); backdrop-filter:none; gap:18px; min-height:70px; }
+  .breadcrumb { color:var(--faint); font-size:12px; }.breadcrumb span { margin:0 10px; }.breadcrumb b { color:var(--muted); font-weight:500; }
+  .connection-state { font-size:12px; color:var(--muted); }.connection-state::before { content:''; display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--warn); margin-right:7px; }.connection-state.online::before { background:var(--ok); }.connection-state.offline::before { background:var(--err); }
+  main { max-width:1320px; padding:36px; gap:25px; }
+  .page-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; }.eyebrow { font:10px ui-monospace,monospace; letter-spacing:1.5px; color:var(--faint); margin-bottom:12px; }
+  h1 { font-size:32px; line-height:1.2; letter-spacing:-1.1px; font-weight:600; }.page-heading p { color:var(--muted); margin:10px 0 0; font-size:13px; }
+  button,input,textarea,select { border-radius:6px; }button { min-height:36px; }button.primary:hover:not(:disabled) { background:#e3f4b0; }#run { white-space:nowrap; padding:11px 17px; }#run span { margin-left:17px; }
+  .pills { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:0; border:1px solid var(--line-soft); border-radius:8px; background:var(--panel); overflow:hidden; }
+  .pills .pill { flex-direction:column; align-items:flex-start; gap:5px; border:0; border-right:1px solid var(--line-soft); border-radius:0; background:transparent; padding:17px 18px; font-size:11px; }.pills .pill:last-child { border-right:0; }.pills .pill b { font-size:23px; font-weight:500; line-height:1.3; letter-spacing:-.5px; }
+  .project-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,1fr); gap:22px; align-items:start; }.connection-grid { display:grid; gap:22px; }
+  .card { border-radius:8px; padding:24px; box-shadow:none; min-width:0; }.head { padding-bottom:16px; border-bottom:1px solid var(--line-soft); align-items:center; flex-wrap:wrap; }.head h2 { font-size:15px; }.head h2::before { display:none; }.head .hint { margin-left:auto; font-size:11px; }
+  .field { display:flex; flex:1; flex-direction:column; gap:6px; min-width:120px; }.field label { color:var(--muted); font-size:11px; }.field input,.field textarea { width:100%; } .field textarea { min-height:150px; line-height:1.7; }
+  .item { border-radius:5px; background:var(--field); padding:13px; }.item .grow { overflow-wrap:anywhere; }.list { max-height:540px; overflow:auto; }.empty { padding:45px 15px; text-align:center; border:1px dashed var(--line); border-radius:6px; color:var(--muted); }.bar { height:4px; }.fill { background:var(--accent); }.note { line-height:1.7; }.connval { border-radius:5px; }.connrow { min-width:0; }.example { white-space:pre-wrap; overflow-wrap:anywhere; }
+  .refresh-error { margin:0; padding:12px 15px; border:1px solid #624143; color:#f0afb1; background:#291e20; border-radius:6px; font-size:12px; }.toast { max-width:calc(100vw - 32px); overflow-wrap:anywhere; }
+  @media(max-width:1100px) { .project-grid { grid-template-columns:1fr; } .pills .pill { padding:14px 12px; } }
+  @media(max-width:760px) { .sidebar { position:static; width:auto; padding:18px 20px 12px; border-right:0; border-bottom:1px solid var(--line-soft); }.sidebar .brand { margin-bottom:20px; }.brand-sub,.nav-label,.sidebar-foot { display:none; }nav { flex-direction:row; gap:5px; }.nav-button { flex:1; padding:10px 8px; font-size:12px; white-space:nowrap; }.nav-button span { display:none; }.workspace { margin-left:0; }header { padding:14px 20px; gap:12px; }.breadcrumb { display:none; }main { padding:25px 20px; gap:20px; }h1 { font-size:28px; }.eyebrow { font-size:9px; }.page-heading { align-items:flex-start; }.page-heading p { max-width:230px; }#run { padding:9px 11px; }#run span { display:none; }.pills { grid-template-columns:repeat(3,minmax(0,1fr)); }.pills .pill:nth-child(3) { border-right:0; }.pills .pill:nth-child(-n+3) { border-bottom:1px solid var(--line-soft); }.card { padding:18px; }.connrow { flex-wrap:wrap; gap:8px; }.connlabel { width:100%; }.connval { font-size:11px; }.head .hint { margin-left:0; }.auto { font-size:11px; }.row .field { min-width:130px; }.row input:not([type=checkbox]) { max-width:100%; } }
+
 </style>
 </head>
 <body>
+<aside class="sidebar">
+  <div class="brand"><span class="mark" aria-hidden="true"></span><span class="brandname">imgrouter<span class="brand-sub">IMAGE GATEWAY</span></span></div>
+  <div class="nav-label">WORKSPACE</div>
+  <nav aria-label="Workspace">
+    <button type="button" data-view="projects" class="nav-button active" aria-current="page"><span>01</span> Projects</button>
+    <button type="button" data-view="keys" class="nav-button"><span>02</span> Gemini keys</button>
+    <button type="button" data-view="connection" class="nav-button"><span>03</span> Connection</button>
+  </nav>
+  <div class="sidebar-foot">Your prompts. Your keys.<br><span>One place to route them.</span></div>
+</aside>
+<div class="workspace">
 <header>
-  <div class="brand"><span class="mark" aria-hidden="true"></span><span class="brandname">imgrouter</span></div>
-  <div id="pills" class="pills"></div>
+  <span class="breadcrumb">Workspace <span>/</span> <b id="viewCrumb">Projects</b></span>
   <div class="spacer"></div>
-  <label class="auto"><input type="checkbox" id="auto" checked /> auto</label>
-  <button id="run" class="primary">Run now</button>
+  <span id="connectionState" class="connection-state" role="status">Connecting…</span>
+  <label class="auto"><input type="checkbox" id="auto" checked /> Live updates</label>
 </header>
-
 <main>
-  <section class="card wide">
-    <div class="head"><h2>Your imgrouter API</h2><span class="hint">point any Gemini-native client here</span></div>
-    <div class="conn">
-      <div class="connrow">
-        <span class="connlabel">Local URL</span>
-        <code id="gBase" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gBase">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">API key</span>
-        <code id="gKey" class="connval hot">— create one in “imgrouter API keys” —</code>
-        <button type="button" class="icon" data-copysrc="gKey">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Model</span>
-        <code id="gModel" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gModel">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">OpenAI URL</span>
-        <code id="gOpenai" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gOpenai">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Access</span>
-        <label class="auto"><input type="checkbox" id="reqKey" /> require an API key for requests</label>
-      </div>
-    </div>
-    <details>
-      <summary>example request</summary>
-      <pre id="gExample" class="example"></pre>
-    </details>
-    <p class="note">imgrouter sits between your apps and Google Gemini, rotating your Gemini keys automatically so you never expose them.</p>
-  </section>
-
-  <div class="cards cards--a">
-    <section class="card">
-      <div class="head"><h2>imgrouter API keys</h2><span class="count" id="ckCount"></span></div>
-      <div class="steps">
-        <div class="step"><b>1</b> Create a key per app.</div>
-        <div class="step"><b>2</b> Paste it into your client — not a Gemini key.</div>
-      </div>
-      <form id="ckForm" class="row">
-        <input id="ckLabel" placeholder="label, e.g. my-app" class="grow" />
-        <button class="primary">Create key</button>
+  <div class="page-heading"><div><div class="eyebrow">IMGROUTER / WORKSPACE</div><h1 id="viewTitle">Projects</h1><p id="viewDescription">Turn a list of prompts into a sequence of images.</p></div><button id="run" class="primary">Run queue <span aria-hidden="true">↗</span></button></div>
+  <div id="pills" class="pills" aria-label="Queue summary"><span class="pill"><b>—</b>Loading status…</span></div>
+  <p id="refreshError" class="refresh-error" role="alert" hidden></p>
+  <div data-panel="projects" class="view-panel"><div class="project-grid"><section class="card">
+      <div class="head"><h2>New project</h2><span class="hint">batch generate</span></div>
+      <form id="projForm" class="col">
+        <div class="row">
+          <input id="pTitle" placeholder="title" required class="grow" />
+          <input id="pRef" placeholder="ref image path (optional)" class="grow" />
+        </div>
+        <input id="pStyle" placeholder="style prompt, e.g. flat vector, same character (optional)" />
+        <textarea id="pPrompts" rows="6" placeholder="one prompt per line..."></textarea>
+        <div class="row">
+          <input id="pCount" type="number" min="1" placeholder="…or N generic scenes" style="width:210px" />
+          <div class="spacer"></div>
+          <button class="primary">Create</button>
+        </div>
+        <p class="note" style="margin:0">No ref path? Scene #1 is generated first and anchors the rest for character consistency.</p>
       </form>
-      <div id="ckList" class="list"></div>
-    </section>
-
-    <section class="card">
+    </section><section class="card">
+      <div class="head"><h2>Projects</h2></div>
+      <div id="projList" class="list"></div>
+    </section></div></div>
+  <div data-panel="keys" class="view-panel" hidden><section class="card">
       <div class="head"><h2>Gemini keys</h2><span class="count" id="accCount"></span></div>
-      <p class="muted" style="margin:0 0 14px">The Google Gemini keys imgrouter rotates through. Add as many as you like — each carries its own daily quota.</p>
+      <p class="muted" style="margin:0 0 14px">The Google Gemini keys imgrouter rotates through. Manage provider credentials and local usage limits. Actual quotas are set by Google and may be shared across keys.</p>
       <form id="accForm" class="col">
         <div class="row">
-          <input id="accKey" placeholder="Gemini API key (AIza…)" required class="grow" />
+          <input type="password" autocomplete="off" id="accKey" placeholder="Gemini API key (AIza…)" required class="grow" />
           <input id="accLimit" type="number" min="1" placeholder="day limit" style="width:110px" />
         </div>
         <div class="row">
-          <input id="accLabel" placeholder="label (optional)" />
+          <input id="accLabel" placeholder="e.g. main-project" />
           <div class="spacer"></div>
           <button type="button" id="accTest">Test</button>
           <button class="primary">Add</button>
@@ -251,34 +270,56 @@
         <button id="accDelSel" class="danger icon">Delete selected</button>
         <button id="accDelBlocked" class="danger icon">Delete blocked</button>
       </div>
-    </section>
-  </div>
+    </section></div>
+  <div data-panel="connection" class="view-panel" hidden><div class="connection-grid">  <section class="card wide">
+    <div class="head"><h2>Your imgrouter API</h2><span class="hint">point any Gemini-native client here</span></div>
+    <div class="conn">
+      <div class="connrow">
+        <span class="connlabel">Local URL</span>
+        <code id="gBase" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gBase">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">API key</span>
+        <code id="gKey" class="connval hot">— create one in “imgrouter API keys” —</code>
+        <button type="button" class="icon" data-copysrc="gKey">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">Model</span>
+        <code id="gModel" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gModel">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">OpenAI URL</span>
+        <code id="gOpenai" class="connval">…</code>
+        <button type="button" class="icon" data-copysrc="gOpenai">copy</button>
+      </div>
+      <div class="connrow">
+        <span class="connlabel">Access</span>
+        <label class="auto"><input type="checkbox" id="reqKey" /> require an API key for requests</label>
+      </div>
+    </div>
+    <details>
+      <summary>example request</summary>
+      <pre id="gExample" class="example"></pre>
+    </details>
+    <p class="note">imgrouter sits between your apps and Google Gemini, rotating your Gemini keys automatically so you never expose them.</p>
+  </section>
 
-  <div class="cards cards--b">
-    <section class="card">
-      <div class="head"><h2>New project</h2><span class="hint">batch generate</span></div>
-      <form id="projForm" class="col">
-        <div class="row">
-          <input id="pTitle" placeholder="title" required class="grow" />
-          <input id="pRef" placeholder="ref image path (optional)" class="grow" />
-        </div>
-        <input id="pStyle" placeholder="style prompt, e.g. flat vector, same character (optional)" />
-        <textarea id="pPrompts" rows="6" placeholder="one prompt per line..."></textarea>
-        <div class="row">
-          <input id="pCount" type="number" min="1" placeholder="…or N generic scenes" style="width:210px" />
-          <div class="spacer"></div>
-          <button class="primary">Create</button>
-        </div>
-        <p class="note" style="margin:0">No ref path? Scene #1 is generated first and anchors the rest for character consistency.</p>
+<section class="card">
+      <div class="head"><h2>imgrouter API keys</h2><span class="count" id="ckCount"></span></div>
+      <div class="steps">
+        <div class="step"><b>1</b> Create a key per app.</div>
+        <div class="step"><b>2</b> Paste it into your client — not a Gemini key.</div>
+      </div>
+      <form id="ckForm" class="row">
+        <input id="ckLabel" placeholder="label, e.g. my-app" class="grow" />
+        <button class="primary">Create key</button>
       </form>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Projects</h2></div>
-      <div id="projList" class="list"></div>
-    </section>
-  </div>
+      <div id="ckList" class="list"></div>
+    </section></div></div>
 </main>
+</div>
 
 <div id="toast" class="toast"></div>
 
@@ -305,7 +346,7 @@
     const text = await res.text();
     let body;
     try { body = text ? JSON.parse(text) : {}; } catch { body = { error: text }; }
-    if (!res.ok) throw new Error(body.error || res.status);
+    if (!res.ok) throw new Error(typeof body.error === "string" ? body.error : body.error?.message || `HTTP ${res.status}`);
     return body;
   }
 
@@ -418,7 +459,7 @@
 
     $("#accList").innerHTML = slice.length
       ? slice.map(accountRow).join("")
-      : '<p class="empty">No Gemini keys yet — add one above.</p>';
+      : '<p class="empty">No matching keys. Add a Gemini key or adjust your filters.</p>';
 
     const active = allAccounts.filter((a) => a.status === "active").length;
     const blocked = allAccounts.filter((a) => a.status === "blocked").length;
@@ -429,7 +470,7 @@
   }
 
   function renderProjects(projects) {
-    if (!projects.length) { $("#projList").innerHTML = '<p class="empty">No projects yet.</p>'; return; }
+    if (!projects.length) { $("#projList").innerHTML = '<p class="empty">Your queue is empty. Create a project to start generating images.</p>'; return; }
     $("#projList").innerHTML = projects.map((p) => {
       const pr = p.progress || { total: 0, done: 0, failed: 0, deferred: 0, running: 0 };
       const pct = pr.total ? Math.round((pr.done / pr.total) * 100) : 0;
@@ -474,6 +515,9 @@
       const [status, accounts, projects, keysRes] = await Promise.all([
         api("/status"), api("/accounts"), api("/projects"), api("/clientkeys"),
       ]);
+      $("#connectionState").textContent = "Connected";
+      $("#connectionState").className = "connection-state online";
+      $("#refreshError").hidden = true;
       allAccounts = accounts.accounts || [];
       const ids = new Set(allAccounts.map((a) => a.id));
       for (const id of [...selected]) if (!ids.has(id)) selected.delete(id);
@@ -482,7 +526,12 @@
       renderAccounts();
       renderProjects(projects.projects || []);
       renderClientKeys(keysRes.clientKeys || []);
-    } catch { /* quiet on background polls */ }
+    } catch (error) {
+      $("#connectionState").textContent = "Offline";
+      $("#connectionState").className = "connection-state offline";
+      $("#refreshError").hidden = false;
+      $("#refreshError").textContent = "Could not refresh. Displayed values may be outdated. " + error.message;
+    }
   }
 
   $("#ckForm").addEventListener("submit", async (ev) => {
@@ -601,7 +650,7 @@
     ev.preventDefault();
     const dayLimit = $("#accLimit").value ? Number($("#accLimit").value) : undefined;
     try {
-      await api("/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#accLabel").value, apiKey: $("#accKey").value, dayLimit }) });
+      await api("/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#accLabel").value.trim() || "Gemini key", apiKey: $("#accKey").value, dayLimit }) });
       $("#accForm").reset(); toast("Gemini key added — you can add another"); refresh();
     } catch (e) { toast(e.message, false); }
   });
@@ -624,10 +673,43 @@
   });
 
   $("#run").addEventListener("click", async () => {
-    try { const s = await api("/run", { method: "POST" }); toast("done " + s.done + " · deferred " + s.deferred); refresh(); }
+    const btn = $("#run");
+    btn.disabled = true; btn.textContent = "Running…";
+    try { const s = await api("/run", { method: "POST" }); toast("Done " + s.done + " · deferred " + s.deferred); await refresh(); }
     catch (e) { toast(e.message, false); }
+    finally { btn.disabled = false; btn.innerHTML = 'Run queue <span aria-hidden="true">↗</span>'; }
   });
 
+  const views = {
+    projects: ["Projects", "Turn a list of prompts into a sequence of images."],
+    keys: ["Gemini keys", "Manage the provider keys that power your image queue."],
+    connection: ["Connection", "Connect your apps and manage their access keys."],
+  };
+  function selectView(view) {
+    if (!views[view]) view = "projects";
+    document.querySelectorAll("[data-panel]").forEach(el => { el.hidden = el.dataset.panel !== view; });
+    document.querySelectorAll("[data-view]").forEach(el => {
+      const active = el.dataset.view === view;
+      el.classList.toggle("active", active);
+      if (active) el.setAttribute("aria-current", "page"); else el.removeAttribute("aria-current");
+    });
+    $("#viewTitle").textContent = $("#viewCrumb").textContent = views[view][0];
+    $("#viewDescription").textContent = views[view][1];
+    $("#run").hidden = view !== "projects";
+  }
+  document.querySelectorAll("[data-view]").forEach(el => el.addEventListener("click", () => { location.hash = el.dataset.view; }));
+  window.addEventListener("hashchange", () => selectView(location.hash.slice(1)));
+  selectView(location.hash.slice(1));
+  const fieldLabels = { pTitle: "Project name", pRef: "Reference image path · optional", pStyle: "Shared visual style · optional", pPrompts: "Scene prompts · one per line", pCount: "Generic scene count · optional", accKey: "Gemini API key", accLimit: "Daily limit", accLabel: "Key label", ckLabel: "App name" };
+  for (const [id, title] of Object.entries(fieldLabels)) {
+    const input = document.getElementById(id);
+    const wrapper = document.createElement("div"); wrapper.className = "field";
+    const label = document.createElement("label"); label.htmlFor = id; label.textContent = title;
+    input.before(wrapper); wrapper.append(label, input);
+  }
+  document.querySelectorAll("input,textarea,select").forEach(el => {
+    if (!el.labels?.length) el.setAttribute("aria-label", el.placeholder || el.id);
+  });
   let timer = null;
   function schedule() {
     if (timer) clearInterval(timer);
@@ -639,3 +721,4 @@
 </script>
 </body>
 </html>
+
