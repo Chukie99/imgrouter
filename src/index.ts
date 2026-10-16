@@ -1,3 +1,4 @@
+import { ensureDefaultClientKey } from "./db/clientKeys.js";
 import { config } from "./config.js";
 import { getDb } from "./db/index.js";
 import { startServer } from "./api/server.js";
@@ -5,6 +6,7 @@ import { startServer } from "./api/server.js";
 
 async function main(): Promise<void> {
   getDb();
+  ensureDefaultClientKey();
 
   const server = startServer();
 

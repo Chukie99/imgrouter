@@ -20,8 +20,10 @@ Existing CLI and Windows tray commands are retained. The normal server no longer
 | Value | Default |
 |---|---|
 | Base URL | `http://127.0.0.1:8787/v1` |
-| API key | Create a client key in Overview; copy its `sk-...` value |
+| API key | A persistent default key is created on first startup; copy its `sk-...` value in Overview |
 | Model | `gemini-2.5-flash-image`, or a combo name you create |
+
+Additional client keys and Gemini model routes can be added in the dashboard, alongside custom combos. Default key bootstrapping is one-time: deliberately revoking the last key does not silently restore it.
 
 The default model is a configured route, not a guarantee of Google model availability, billing, or quota. Change `GEMINI_IMAGE_MODEL` if necessary. `GET /v1/models` exposes the configured model, combos, and their target models.
 

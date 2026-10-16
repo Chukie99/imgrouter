@@ -12,6 +12,7 @@ const {getDb}=await import('./db/index.js');
 const {createAccount,updateAccount,getAccount}=await import('./db/accounts.js');
 const {MOCK_PNG_B64}=await import('./worker/generator.js');
 const {defaultResetAt}=await import('./scheduler/clock.js');
+const {ensureDefaultClientKey,listClientKeys,deleteClientKey}=await import('./db/clientKeys.js');
 const db=getDb();
 let called:Array<{url:string;body:any;key:string}>=[];
 let provider:(url:string,body:any,key:string)=>Response=()=>new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:{mimeType:'image/png',data:MOCK_PNG_B64}}]}}]}),{status:200});
@@ -25,6 +26,15 @@ async function request(url:string,body?:unknown,options:{key?:string;origin?:str
  const res={writeHead(s:number){status=s;},end(value?:string){raw=value??'';}} as unknown as ServerResponse;
  await route(req,res);return {status,body:raw?JSON.parse(raw):null,raw};
 }
+ensureDefaultClientKey();
+const defaultClient=listClientKeys()[0]!;
+assert.equal(defaultClient.label,'Default');
+ensureDefaultClientKey();assert.equal(listClientKeys().length,1);assert.equal(listClientKeys()[0]!.key,defaultClient.key,'default key remains stable');
+deleteClientKey(defaultClient.id);ensureDefaultClientKey();assert.equal(listClientKeys().length,0,'explicitly revoked default is not resurrected');
+assert.equal((await request('/models',{model:'gemini-added-image'})).status,200);
+assert.ok((await request('/status')).body.models.includes('models/gemini-added-image'));
+assert.equal((await request('/models/gemini-added-image',{}, {method:'DELETE'})).status,200);
+assert.equal((await request('/models/gemini-2.5-flash-image',{}, {method:'DELETE'})).status,400);
 const account=createAccount('provider one','provider-secret-1',5);
 const other=createAccount('provider two','provider-secret-2',5);
 const client=await request('/clientkeys',{label:'app'});assert.equal(client.status,201);const key=client.body.key;

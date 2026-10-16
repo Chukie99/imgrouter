@@ -1,4 +1,4 @@
-import { combos, saveCombo, deleteCombo } from "../gateway/models.js";
+import { combos, saveCombo, deleteCombo, extraModels, addModel, removeModel } from "../gateway/models.js";
 import { recentRequests } from "../gateway/logs.js";
 import fs from "node:fs";
 import path from "node:path";
@@ -174,11 +174,27 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
       requireApiKey: requireApiKey(),
       models: listModels().models.map((m) => String(m.name)),
       combos: combos(),
+      defaultModel: config.geminiImageModel,
+      extraModels: extraModels(),
       requests: recentRequests(),
     });
     return;
   }
 
+  if (segments[0] === "models") {
+    if (method === "GET") { json(res, 200, { defaultModel: config.geminiImageModel, models: extraModels() }); return; }
+    if (method === "POST") {
+      const body = await readJson(req);
+      try { addModel(body.model); json(res, 200, { models: extraModels() }); }
+      catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return;
+    }
+    if (method === "DELETE" && segments[1]) {
+      try { removeModel(segments[1]); json(res, 200, { models: extraModels() }); }
+      catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return;
+    }
+  }
   if (segments[0] === "combos") {
     if (method === "GET") { json(res, 200, { combos: combos() }); return; }
     if (method === "POST") {
