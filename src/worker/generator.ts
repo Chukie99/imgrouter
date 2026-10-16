@@ -40,7 +40,7 @@ export async function testApiKey(apiKey: string): Promise<KeyTestOutcome> {
   const url = `${config.geminiBaseUrl}/models?pageSize=1000&key=${encodeURIComponent(apiKey)}`;
   let response: Response;
   try {
-    response = await fetch(url, { method: "GET" });
+    response = await fetch(url, { method: "GET", signal: AbortSignal.timeout(15000) });
   } catch (error) {
     return { ok: false, message: `network: ${(error as Error).message}` };
   }
@@ -182,3 +182,4 @@ async function parseError(response: Response): Promise<GenOutcome> {
 
   return { ok: false, kind: "failed", message };
 }
+

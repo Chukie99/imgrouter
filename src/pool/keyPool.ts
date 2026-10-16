@@ -59,7 +59,7 @@ export async function acquireKey(exclude: Set<string>): Promise<Account | null> 
       (account) =>
         account.status === "active" &&
         isCooledDown(account, now) &&
-        account.dayUsed < account.dayLimit &&
+        (config.providerManagedQuota || account.dayUsed < account.dayLimit) &&
         (inflight.get(account.id) ?? 0) < config.maxInflightPerKey &&
         withinRpm(account.id, now) &&
         !exclude.has(account.id),
@@ -93,6 +93,7 @@ export async function reportSuccess(id: string): Promise<void> {
       dayUsed: account.dayUsed + 1,
       okCount: account.okCount + 1,
       cooldownUntil: null,
+      resetAt: account.resetAt ?? defaultResetAt(),
     });
     logQuota(id, "success", null);
   });
@@ -138,8 +139,8 @@ export async function rolloverAccounts(): Promise<number> {
     let reset = 0;
     for (const account of listAccounts()) {
       const blocked = account.status === "blocked";
-      if (blocked && (account.resetAt == null || account.resetAt <= now)) {
-        updateAccount(account.id, { status: "active", dayUsed: 0, resetAt: null, cooldownUntil: null });
+      if ((blocked && account.resetAt == null) || (account.resetAt != null && account.resetAt <= now)) {
+        updateAccount(account.id, { status: account.status === "disabled" ? "disabled" : "active", dayUsed: 0, resetAt: null, cooldownUntil: null });
         reset += 1;
       }
     }
@@ -162,7 +163,7 @@ export function healthyKeyCount(): number {
     (account) =>
       account.status === "active" &&
       isCooledDown(account, now) &&
-      account.dayUsed < account.dayLimit &&
+      (config.providerManagedQuota || account.dayUsed < account.dayLimit) &&
       (inflight.get(account.id) ?? 0) < config.maxInflightPerKey &&
       withinRpm(account.id, now),
   ).length;
@@ -184,7 +185,8 @@ export function nextWakeAt(): number | null {
       continue;
     }
     consider(account.cooldownUntil);
-    if (account.dayUsed < account.dayLimit) consider(rpmUnblockAt(account.id, now));
+    if ((config.providerManagedQuota || account.dayUsed < account.dayLimit)) consider(rpmUnblockAt(account.id, now));
   }
   return earliest;
 }
+

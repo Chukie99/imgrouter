@@ -21,6 +21,8 @@ function str(name: string, fallback: string): string {
 
 export const config = {
   port: num("PORT", 8787),
+  host: str("HOST", "127.0.0.1"),
+  providerManagedQuota: str("PROVIDER_MANAGED_QUOTA", "true") !== "false",
   dbPath: str("DB_PATH", path.resolve(process.cwd(), "data/imgrouter.db")),
   imagesDir: str("IMAGES_DIR", path.resolve(process.cwd(), "data/images")),
 
@@ -40,3 +42,4 @@ export const config = {
 
   mockGemini: str("MOCK_GEMINI", "") as "" | "ok" | "quota" | "rate",
 } as const;
+
