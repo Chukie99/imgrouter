@@ -1,5 +1,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { getDb } from "./index.js";
+import { getSetting, setSetting } from "./settings.js";
 
 type Row = Record<string, unknown>;
 
@@ -62,4 +63,18 @@ export function findClientKey(value: string): ClientKey | null {
 
 export function touchClientKey(id: string): void {
   getDb().prepare("UPDATE client_keys SET lastUsedAt = ?, uses = uses + 1 WHERE id = ?").run(Date.now(), id);
+}
+
+
+/** Bootstrap once. Revoked keys are never silently recreated on later starts. */
+export function ensureDefaultClientKey(): void {
+  const db = getDb();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    if (getSetting("client_keys_initialized") !== "true") {
+      if (listClientKeys().length === 0) createClientKey("Default");
+      setSetting("client_keys_initialized", "true");
+    }
+    db.exec("COMMIT");
+  } catch (error) { db.exec("ROLLBACK"); throw error; }
 }

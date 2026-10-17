@@ -3,6 +3,7 @@ import path from "node:path";
 
 // Self-contained test env — must be set before config.js is imported.
 process.env.MOCK_GEMINI ??= "ok";
+process.env.PROVIDER_MANAGED_QUOTA = "false";
 process.env.DB_PATH ??= path.resolve(process.cwd(), "data/smoke.db");
 process.env.IMAGES_DIR ??= path.resolve(process.cwd(), "data/smoke-images");
 
@@ -211,3 +212,4 @@ async function main(): Promise<void> {
 }
 
 await main();
+

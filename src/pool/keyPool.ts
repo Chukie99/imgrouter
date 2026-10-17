@@ -1,3 +1,4 @@
+import { setSetting } from "../db/settings.js";
 import { config } from "../config.js";
 import { getAccount, listAccounts, logQuota, updateAccount } from "../db/accounts.js";
 import type { Account } from "../db/types.js";
@@ -59,7 +60,7 @@ export async function acquireKey(exclude: Set<string>): Promise<Account | null> 
       (account) =>
         account.status === "active" &&
         isCooledDown(account, now) &&
-        account.dayUsed < account.dayLimit &&
+        (config.providerManagedQuota || account.dayUsed < account.dayLimit) &&
         (inflight.get(account.id) ?? 0) < config.maxInflightPerKey &&
         withinRpm(account.id, now) &&
         !exclude.has(account.id),
@@ -93,6 +94,7 @@ export async function reportSuccess(id: string): Promise<void> {
       dayUsed: account.dayUsed + 1,
       okCount: account.okCount + 1,
       cooldownUntil: null,
+      resetAt: account.resetAt ?? defaultResetAt(),
     });
     logQuota(id, "success", null);
   });
@@ -111,10 +113,11 @@ export async function reportQuotaExhausted(id: string, resetAtMs?: number): Prom
     const account = getAccount(id);
     if (!account) return;
     const observed = account.dayUsed;
+    if(account.status === "disabled")setSetting(`disabledStatus:${id}`,"blocked");
     // Learn the real per-key daily limit: shrink toward the observed success count.
     const learnedLimit = observed > 0 ? Math.min(account.dayLimit, observed) : account.dayLimit;
     updateAccount(id, {
-      status: "blocked",
+      status: account.status === "disabled" ? "disabled" : "blocked",
       resetAt: resetAtMs ?? defaultResetAt(),
       dayLimit: learnedLimit,
     });
@@ -138,8 +141,8 @@ export async function rolloverAccounts(): Promise<number> {
     let reset = 0;
     for (const account of listAccounts()) {
       const blocked = account.status === "blocked";
-      if (blocked && (account.resetAt == null || account.resetAt <= now)) {
-        updateAccount(account.id, { status: "active", dayUsed: 0, resetAt: null, cooldownUntil: null });
+      if ((blocked && account.resetAt == null) || (account.resetAt != null && account.resetAt <= now)) {
+        updateAccount(account.id, { status: account.status === "disabled" ? "disabled" : "active", dayUsed: 0, resetAt: null, cooldownUntil: null });
         reset += 1;
       }
     }
@@ -162,7 +165,7 @@ export function healthyKeyCount(): number {
     (account) =>
       account.status === "active" &&
       isCooledDown(account, now) &&
-      account.dayUsed < account.dayLimit &&
+      (config.providerManagedQuota || account.dayUsed < account.dayLimit) &&
       (inflight.get(account.id) ?? 0) < config.maxInflightPerKey &&
       withinRpm(account.id, now),
   ).length;
@@ -184,7 +187,8 @@ export function nextWakeAt(): number | null {
       continue;
     }
     consider(account.cooldownUntil);
-    if (account.dayUsed < account.dayLimit) consider(rpmUnblockAt(account.id, now));
+    if ((config.providerManagedQuota || account.dayUsed < account.dayLimit)) consider(rpmUnblockAt(account.id, now));
   }
   return earliest;
 }
+

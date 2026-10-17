@@ -1,3 +1,6 @@
+import { discoverModels } from "../gateway/catalog.js";
+import { combos, saveCombo, deleteCombo, extraModels, addModel, removeModel } from "../gateway/models.js";
+import { recentRequests, requestStats } from "../gateway/logs.js";
 import fs from "node:fs";
 import path from "node:path";
 import { createServer } from "node:http";
@@ -10,6 +13,7 @@ import {
   deleteAccount,
   deleteAccounts,
   deleteAccountsByStatus,
+  updateAccount,
   getAccount,
   listAccounts,
 } from "../db/accounts.js";
@@ -18,11 +22,8 @@ import { testApiKey } from "../worker/generator.js";
 import { createClientKey, deleteClientKey, findClientKey, listClientKeys, touchClientKey } from "../db/clientKeys.js";
 import { listModels, proxyGenerateContent } from "../gateway/proxy.js";
 import { listOpenAIModels, openAIImageGeneration } from "../gateway/openai.js";
-import { requireApiKey, setRequireApiKey } from "../db/settings.js";
-import { createProjectWithScenes, getProject, getScenes, listProjects, progressByProject } from "../db/projects.js";
-import * as jobs from "../db/jobs.js";
+import { requireApiKey, setRequireApiKey, getSetting, setSetting } from "../db/settings.js";
 import * as keyPool from "../pool/keyPool.js";
-import { runOnce } from "../scheduler/dispatcher.js";
 import type { Account, AccountStatus } from "../db/types.js";
 
 const KNOWN_STATUSES: AccountStatus[] = ["active", "blocked", "disabled"];
@@ -40,13 +41,19 @@ function json(res: ServerResponse, status: number, body: unknown): void {
 
 async function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
   const chunks: Buffer[] = [];
-  for await (const chunk of req) chunks.push(chunk as Buffer);
+  let size = 0;
+  for await (const chunk of req) {
+    size += Buffer.byteLength(chunk);
+    if (size > 36 * 1024 * 1024) throw Object.assign(new Error("Request body exceeds 36 MiB"), { status: 413 });
+    chunks.push(chunk as Buffer);
+  }
   if (chunks.length === 0) return {};
   const raw = Buffer.concat(chunks).toString("utf8");
   if (!raw.trim()) return {};
-  const parsed = JSON.parse(raw);
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { throw Object.assign(new Error("Invalid JSON body"), { status: 400 }); }
   if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("body must be a JSON object");
+    throw Object.assign(new Error("body must be a JSON object"), { status: 400 });
   }
   return parsed as Record<string, unknown>;
 }
@@ -102,20 +109,23 @@ const dashboardPath = fileURLToPath(new URL("./dashboard.html", import.meta.url)
 let dashboardHtml: string | null = null;
 function getDashboard(): string {
   if (dashboardHtml == null) dashboardHtml = fs.readFileSync(dashboardPath, "utf8");
-  return dashboardHtml;
+  const keys = listClientKeys();
+  const bootstrap = JSON.stringify({ clientKeys: keys, defaultModel: config.geminiImageModel })
+    .replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
+  return dashboardHtml.replace("<!-- IMGROUTER_BOOTSTRAP -->", `<script id="gatewayBootstrap" type="application/json">${bootstrap}</script>`);
 }
 
 export function startServer(): Server {
   const server = createServer((req, res) => {
     route(req, res).catch((error) => {
-      json(res, 500, { error: (error as Error).message });
+      json(res, (error as { status?: number }).status ?? 500, { error: (error as Error).message });
     });
   });
-  server.listen(config.port);
+  server.listen(config.port, config.host);
   return server;
 }
 
-async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
+export async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
   const method = req.method ?? "GET";
   const url = new URL(req.url ?? "/", `http://localhost:${config.port}`);
   const segments = url.pathname.split("/").filter(Boolean);
@@ -125,9 +135,21 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     return;
   }
 
+  // Admin actions are local-only and reject cross-origin browser requests.
+  const publicRoute = ["v1", "v1beta", "files", "health"].includes(segments[0] ?? "");
+  if (!publicRoute) {
+    const local = ["127.0.0.1", "::1", "::ffff:127.0.0.1"].includes(req.socket.remoteAddress ?? "");
+    const origin = req.headers.origin;
+    const sameOrigin = !origin || origin === `http://${req.headers.host}`;
+    const hostname = new URL(`http://${req.headers.host ?? "localhost"}`).hostname;
+    const localHost = ["localhost", "127.0.0.1", "[::1]"].includes(hostname);
+    if (!local || !localHost || !sameOrigin || req.headers["sec-fetch-site"] === "cross-site") {
+      json(res, 403, { error: "Dashboard administration is available locally only" }); return;
+    }
+  }
   // GET /  and  GET /dashboard — static single-page dashboard
   if (method === "GET" && (url.pathname === "/" || url.pathname === "/dashboard")) {
-    res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    res.writeHead(200, { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" });
     res.end(getDashboard());
     return;
   }
@@ -146,7 +168,8 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
   // GET /status
   if (method === "GET" && url.pathname === "/status") {
     json(res, 200, {
-      capacity: keyPool.capacity(),
+      capacity: config.providerManagedQuota ? null : keyPool.capacity(),
+      quotaMode: config.providerManagedQuota ? "provider" : "local",
       healthyKeys: keyPool.healthyKeyCount(),
       nextWakeAt: keyPool.nextWakeAt(),
       accounts: listAccounts().length,
@@ -155,10 +178,46 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       openaiBase: "/v1",
       requireApiKey: requireApiKey(),
       models: listModels().models.map((m) => String(m.name)),
-      jobs: jobs.countByState(),
+      combos: combos(),
+      defaultModel: config.geminiImageModel,
+      extraModels: extraModels(),
+      requests: recentRequests(),
+      requestStats: requestStats(),
+      mockMode: Boolean(config.mockGemini),
     });
     return;
   }
+
+  if(method === "POST" && url.pathname === "/models/discover") {
+    const body=await readJson(req);
+    try { const models=await discoverModels(String(body.accountId??''));json(res,200,{models}); }
+    catch(error) { json(res,400,{error:(error as Error).message}); }
+    return;
+  }
+  if (segments[0] === "models") {
+    if (method === "GET") { json(res, 200, { defaultModel: config.geminiImageModel, models: extraModels() }); return; }
+    if (method === "POST") {
+      const body = await readJson(req);
+      try { addModel(body.model); json(res, 200, { models: extraModels() }); }
+      catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return;
+    }
+    if (method === "DELETE" && segments[1]) {
+      try { removeModel(segments[1]); json(res, 200, { models: extraModels() }); }
+      catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return;
+    }
+  }
+  if (segments[0] === "combos") {
+    if (method === "GET") { json(res, 200, { combos: combos() }); return; }
+    if (method === "POST") {
+      const body = await readJson(req);
+      try { json(res, 200, saveCombo(body)); } catch (error) { json(res, 400, { error: (error as Error).message }); }
+      return;
+    }
+    if (method === "DELETE" && segments[1]) { deleteCombo(segments[1]); json(res, 200, { ok: true }); return; }
+  }
+  if (method === "GET" && url.pathname === "/logs") { json(res, 200, { requests: recentRequests() }); return; }
 
   // GET/POST /settings — dashboard-managed gateway options
   if (segments[0] === "settings") {
@@ -183,6 +242,8 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       json(res, 404, { error: "file not found" });
       return;
     }
+    const guard = guardApi(req, url, res, "openai");
+    if (!guard.ok) return;
     const ext = path.extname(abs).toLowerCase();
     const type = ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "image/png";
     res.writeHead(200, { "content-type": type, "access-control-allow-origin": "*" });
@@ -222,6 +283,7 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     // POST /v1beta/models/{model}:generateContent  (also accepts :streamGenerateContent)
     if (method === "POST" && segments.length === 3 && segments[1] === "models" && segments[2]) {
       const action = segments[2];
+      if (!action.endsWith(":generateContent")) { json(res, 400, { error: "Only :generateContent is supported; streaming is not supported" }); return; }
       const colon = action.lastIndexOf(":");
       const model = colon === -1 ? action : action.slice(0, colon);
       if (!model) {
@@ -245,19 +307,27 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       return;
     }
 
-    if (method === "POST" && segments.length === 3 && segments[1] === "images" && segments[2] === "generations") {
+    if (method === "POST" && segments.length === 3 && segments[1] === "images" && ["generations", "edits"].includes(segments[2] ?? "")) {
+      if (!(req.headers["content-type"] ?? "").includes("application/json")) {
+        json(res, 415, { error: { message: "Use application/json with reference_images or image as base64 data URLs; multipart is not supported" } }); return;
+      }
       const body = await readJson(req);
+      if (segments[2] === "edits" && body.image === undefined && body.reference_images === undefined) { json(res, 400, { error: { message: "Image edits require image or reference_images" } }); return; }
       const prompt = typeof body.prompt === "string" ? body.prompt.trim() : "";
       if (!prompt) {
         json(res, 400, { error: { message: "prompt is required", type: "invalid_request_error" } });
         return;
       }
+      if (body.n !== undefined && typeof body.n !== "number") { json(res, 400, { error: { message: "n must be a number" } }); return; }
       const result = await openAIImageGeneration(
         {
           model: typeof body.model === "string" ? body.model : undefined,
           prompt,
           n: typeof body.n === "number" ? body.n : undefined,
           responseFormat: typeof body.response_format === "string" ? body.response_format : undefined,
+          referenceImages: body.reference_images,
+          image: body.image,
+          allowModelFallback: body.allow_model_fallback !== false,
         },
         requestOrigin(req),
       );
@@ -274,9 +344,9 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
     }
     if (method === "POST" && segments.length === 1) {
       const body = await readJson(req);
-      const label = typeof body.label === "string" ? body.label : "";
+      const label = typeof body.label === "string" && body.label.trim() ? body.label.trim() : "Gemini key";
       const apiKey = typeof body.apiKey === "string" ? body.apiKey : "";
-      const dayLimit = typeof body.dayLimit === "number" ? body.dayLimit : undefined;
+      const dayLimit = undefined;
       if (!label || !apiKey) {
         json(res, 400, { error: "label and apiKey are required" });
         return;
@@ -289,6 +359,16 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       deleteAccount(segments[1]);
       json(res, 200, { deleted: segments[1] });
       return;
+    }
+    if(method === "POST" && segments.length===3 && segments[2]==="enabled" && segments[1]) {
+      const body=await readJson(req);const account=getAccount(segments[1]);
+      if(!account){json(res,404,{error:"Provider key not found"});return;}
+      if(typeof body.enabled!=="boolean"){json(res,400,{error:"enabled must be a boolean"});return;}
+      // Preserve provider quota/cooldown when re-enabling; enabling does not reset quota.
+      const saved=getSetting(`disabledStatus:${account.id}`);
+      if(!body.enabled&&account.status!=="disabled")setSetting(`disabledStatus:${account.id}`,account.status);
+      const status=body.enabled?(saved==="blocked"&&account.resetAt!=null&&account.resetAt>Date.now()?"blocked":"active"):"disabled";
+      updateAccount(account.id,{status});json(res,200,{account:maskAccount(getAccount(account.id)!)});return;
     }
     // POST /accounts/bulk — paste many keys at once
     if (method === "POST" && segments.length === 2 && segments[1] === "bulk") {
@@ -346,61 +426,6 @@ async function route(req: IncomingMessage, res: ServerResponse): Promise<void> {
       json(res, 200, { removed });
       return;
     }
-  }
-
-  // /projects
-  if (segments[0] === "projects") {
-    if (method === "GET" && segments.length === 1) {
-      const progress = progressByProject();
-      const projects = listProjects().map((project) => ({
-        ...project,
-        progress: progress[project.id] ?? { total: 0, done: 0, failed: 0, deferred: 0, running: 0 },
-      }));
-      json(res, 200, { projects });
-      return;
-    }
-    if (method === "GET" && segments.length === 2 && segments[1]) {
-      const project = getProject(segments[1]);
-      if (!project) {
-        json(res, 404, { error: "project not found" });
-        return;
-      }
-      json(res, 200, { project, scenes: getScenes(project.id) });
-      return;
-    }
-    if (method === "POST" && segments.length === 1) {
-      const body = await readJson(req);
-      const title = typeof body.title === "string" ? body.title : "";
-      if (!title) {
-        json(res, 400, { error: "title is required" });
-        return;
-      }
-      let prompts: string[] = Array.isArray(body.prompts)
-        ? body.prompts.filter((p): p is string => typeof p === "string" && p.trim().length > 0)
-        : [];
-      if (prompts.length === 0 && typeof body.count === "number" && body.count > 0) {
-        prompts = Array.from({ length: Math.floor(body.count) }, (_unused, i) => `scene ${i + 1}`);
-      }
-      if (prompts.length === 0) {
-        json(res, 400, { error: "provide prompts[] (or count)" });
-        return;
-      }
-      const result = createProjectWithScenes({
-        title,
-        stylePrompt: typeof body.stylePrompt === "string" ? body.stylePrompt : null,
-        refImagePath: typeof body.refImagePath === "string" ? body.refImagePath : null,
-        prompts,
-      });
-      json(res, 201, { project: result.project, sceneCount: result.sceneIds.length });
-      return;
-    }
-  }
-
-  // POST /run — force one dispatcher pass
-  if (method === "POST" && url.pathname === "/run") {
-    const summary = await runOnce();
-    json(res, 200, summary);
-    return;
   }
 
   json(res, 404, { error: `no route for ${method} ${url.pathname}` });

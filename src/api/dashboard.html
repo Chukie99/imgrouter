@@ -1,641 +1,86 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>imgrouter</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>imgrouter · Image gateway</title>
 <style>
-  :root {
-    --bg:#0d0e11; --panel:#15171c; --panel-2:#1b1e25; --field:#101216;
-    --line:#2a2e37; --line-soft:#22262e;
-    --text:#ecedef; --muted:#9aa1ad; --faint:#6b7280;
-    --accent:#e8865b; --accent-ink:#20120b;
-    --ok:#79c39a; --warn:#e3b171; --err:#e2797c;
-  }
-  * { box-sizing:border-box; }
-  html { color-scheme:dark; }
-  body {
-    margin:0; background:var(--bg); color:var(--text);
-    font:14px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    -webkit-font-smoothing:antialiased;
-  }
-  h1,h2 { margin:0; }
-  code, pre, textarea { font-family:ui-monospace,"Cascadia Code",Consolas,monospace; }
+:root{color-scheme:dark;--bg:#101416;--panel:#181d20;--field:#111618;--border:#30393d;--text:#eaf0eb;--muted:#a4b1aa;--accent:#d6ec91;--red:#f2a5a7;--green:#96d2aa}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif}button,input,select,textarea{font:inherit}button{cursor:pointer;background:#252e32;border:1px solid var(--border);color:var(--text);padding:9px 13px;border-radius:6px}button:hover{border-color:#657269}button:disabled{opacity:.5;cursor:wait}.primary{background:var(--accent);color:#202a12;border-color:var(--accent);font-weight:600}.danger{color:var(--red)}button.small{padding:5px 10px;font-size:12px}input,select,textarea{color:var(--text);background:var(--field);border:1px solid var(--border);border-radius:6px;padding:10px 12px;width:100%;min-width:0}textarea{resize:vertical;min-height:110px}input[type=checkbox]{width:auto;accent-color:var(--accent)}:focus-visible{outline:2px solid var(--accent);outline-offset:3px}[hidden]{display:none!important}aside{position:fixed;inset:0 auto 0 0;width:216px;padding:30px 20px;background:#151a1c;border-right:1px solid var(--border);display:flex;flex-direction:column}.brand{font-size:22px;font-weight:650;letter-spacing:-.8px}.brand::before{content:'=';color:var(--accent);margin-right:12px}.caption{font-size:10px;letter-spacing:1.8px;color:var(--muted);margin:3px 0 46px 28px}nav{display:grid;gap:8px}.nav{border-color:transparent;text-align:left;background:transparent;color:var(--muted)}.nav span{font:11px monospace;margin-right:14px}.nav.active{background:#293322;color:var(--accent);border-color:#414c34}.sidebar-note{margin-top:auto;font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:18px}.workspace{margin-left:216px}header{border-bottom:1px solid var(--border);padding:18px 34px;display:flex;gap:22px;align-items:center;font-size:12px;color:var(--muted)}header .status{margin-left:auto}.status::before{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--muted);margin-right:7px}.status.online::before{background:var(--green)}.status.offline::before{background:var(--red)}main{max-width:1280px;margin:auto;padding:34px}.page-heading{margin-bottom:26px}.eyebrow{font:10px monospace;letter-spacing:1.5px;color:var(--muted)}h1{font-size:32px;letter-spacing:-1px;line-height:1.3;margin:10px 0}p{color:var(--muted);margin:8px 0 0}h2{font-size:15px;margin:0}h3{font-size:13px;margin:0}.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:22px;align-items:start}.stack{display:grid;gap:22px}.card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:23px;min-width:0}.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border);padding-bottom:15px;margin-bottom:18px}.meta{font-size:11px;color:var(--muted)}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px}.stat{background:var(--panel);padding:15px 20px}.stat b{display:block;font-size:23px;font-weight:500}.stat span{font-size:11px;color:var(--muted)}.field{display:grid;gap:7px;margin-bottom:15px;min-width:0}.field>label,.field>span{font-size:12px;color:var(--muted)}.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.row>.grow{flex:1;min-width:0}.connection-value{display:flex;align-items:center;gap:8px;min-width:0}.connection-value code{flex:1;background:var(--field);border:1px solid var(--border);border-radius:5px;padding:10px 12px;min-width:0;overflow-wrap:anywhere;font-size:12px}.connection-value select{flex:1}.note{font-size:12px;line-height:1.7}.list{display:grid;gap:10px;margin-top:17px}.item{background:var(--field);border:1px solid var(--border);padding:14px;border-radius:6px;min-width:0}.item b,.item code{overflow-wrap:anywhere}.item-actions{margin-top:10px}.badge{font:11px monospace;padding:3px 7px;border:1px solid var(--border);border-radius:4px;color:var(--muted)}.badge.ok{color:var(--green)}.badge.warn{color:#e4c18f}.badge.err{color:var(--red)}.empty{border:1px dashed var(--border);border-radius:5px;padding:28px 16px;text-align:center;font-size:12px;color:var(--muted)}.check{font-size:12px;color:var(--muted);display:flex;gap:8px;align-items:center}.error{background:#2f2024;border:1px solid #69464c;padding:13px 16px;color:var(--red);border-radius:6px;margin-bottom:22px;font-size:12px}.hint{font-size:11px;color:var(--muted)}details{margin-top:16px}summary{cursor:pointer;color:var(--muted);font-size:12px}pre{font:11px/1.8 monospace;white-space:pre-wrap;overflow-wrap:anywhere;background:var(--field);border:1px solid var(--border);padding:14px;border-radius:5px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;font-size:12px;white-space:nowrap}th,td{text-align:left;padding:13px 12px;border-bottom:1px solid var(--border)}th{color:var(--muted);font-weight:500}#toast{position:fixed;bottom:22px;right:22px;padding:12px 18px;max-width:calc(100vw - 44px);background:#283428;border:1px solid #607950;border-radius:7px;z-index:10;overflow-wrap:anywhere}#toast.bad{background:#342329;border-color:#85545b}.key-value{font:12px monospace;color:var(--accent);overflow-wrap:anywhere}dialog{max-width:540px;width:calc(100% - 36px);background:var(--panel);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:25px}dialog::backdrop{background:#000a}.split{display:flex;justify-content:space-between;align-items:center;gap:12px}.key-controls{margin-bottom:15px}.key-controls input{max-width:350px}
+@media(max-width:1050px){.grid{grid-template-columns:1fr}}
+@media(max-width:720px){aside{position:static;width:auto;padding:20px;border-right:0;border-bottom:1px solid var(--border)}.caption{margin-bottom:20px}nav{display:flex;gap:4px;overflow-x:auto}.nav{font-size:12px;padding:8px 10px;white-space:nowrap}.nav span,.sidebar-note{display:none}.workspace{margin-left:0}header{padding:14px 20px;gap:14px}header>span:first-child{display:none}header .status{margin-left:0}header .check{margin-left:auto}main{padding:25px 20px}.card{padding:18px}.stats{margin-bottom:20px}.stat{padding:13px 10px}.stat b{font-size:22px}h1{font-size:28px}.connection-value{flex-wrap:wrap}.connection-value code{min-width:140px}.connection-value select{min-width:140px}.card-head{flex-wrap:wrap}.grid{gap:18px}}
 
-  /* ---- header ---- */
-  header {
-    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-    padding:14px 26px; border-bottom:1px solid var(--line-soft);
-    position:sticky; top:0; background:rgba(13,14,17,.86); backdrop-filter:blur(10px); z-index:5;
-  }
-  .brand { display:flex; align-items:center; gap:10px; }
-  .mark { position:relative; width:20px; height:20px; flex:none; }
-  .mark::before, .mark::after { content:""; position:absolute; left:0; width:20px; height:5px; border-radius:2px; background:var(--accent); }
-  .mark::before { top:3px; }
-  .mark::after { bottom:3px; background:var(--muted); opacity:.5; }
-  .brandname { font-weight:650; letter-spacing:.2px; font-size:15px; }
-  .spacer { flex:1; }
-  .pills { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  .pill {
-    display:inline-flex; align-items:center; gap:5px; background:var(--field);
-    border:1px solid var(--line); border-radius:999px; padding:3px 11px;
-    font-size:12px; color:var(--muted); white-space:nowrap;
-  }
-  .pill b { color:var(--text); font-weight:600; }
-  .pill.ok { border-color:#2f4a3d; } .pill.ok b { color:var(--ok); }
-  .pill.warn { border-color:#4a3f28; } .pill.warn b { color:var(--warn); }
-  .pill.err { border-color:#4c2f31; } .pill.err b { color:var(--err); }
-
-  /* ---- controls ---- */
-  button {
-    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
-    border-radius:9px; padding:8px 13px; cursor:pointer; font:inherit; font-weight:500;
-    transition:background .15s, border-color .15s, transform .04s;
-  }
-  button:hover:not(:disabled) { background:#212530; border-color:#39404c; }
-  button:active:not(:disabled) { transform:translateY(1px); }
-  button:disabled { opacity:.4; cursor:default; }
-  button.primary { background:var(--accent); border-color:transparent; color:var(--accent-ink); font-weight:600; }
-  button.primary:hover:not(:disabled) { background:#ef9370; border-color:transparent; }
-  button.danger { color:var(--err); }
-  button.danger:hover:not(:disabled) { border-color:var(--err); }
-  button.icon { padding:4px 10px; font-size:12px; }
-  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-  input, textarea, select {
-    background:var(--field); border:1px solid var(--line); color:var(--text);
-    border-radius:9px; padding:9px 11px; font:inherit;
-  }
-  textarea { resize:vertical; font-size:12px; }
-  select { cursor:pointer; }
-  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--accent); }
-  input[type=checkbox] { width:15px; height:15px; accent-color:var(--accent); cursor:pointer; }
-  .auto { font-size:12px; color:var(--muted); display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
-
-  /* ---- layout ---- */
-  main { padding:26px; max-width:1180px; margin:0 auto; display:flex; flex-direction:column; gap:20px; }
-  .cards { display:grid; gap:20px; }
-  .cards--a { grid-template-columns:minmax(300px,.85fr) minmax(400px,1.35fr); }
-  .cards--b { grid-template-columns:minmax(340px,1fr) minmax(340px,1.1fr); }
-  @media (max-width:900px){ .cards--a,.cards--b { grid-template-columns:1fr; } }
-
-  .card {
-    background:var(--panel); border:1px solid var(--line-soft); border-radius:14px;
-    padding:22px; box-shadow:0 1px 0 rgba(255,255,255,.02) inset;
-  }
-  .wide { grid-column:1 / -1; }
-  .head { display:flex; align-items:baseline; gap:10px; margin-bottom:16px; }
-  .head h2 { font-size:14px; font-weight:600; color:var(--text); display:flex; align-items:center; gap:9px; }
-  .head h2::before { content:""; width:7px; height:7px; border-radius:2px; background:var(--accent); flex:none; }
-  .head .hint { font-size:12px; color:var(--faint); }
-  .count { color:var(--faint); font-size:12px; font-weight:400; }
-
-  .row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-  .col { display:flex; flex-direction:column; gap:10px; }
-  .grow { flex:1; min-width:0; }
-  .muted { color:var(--muted); font-size:12.5px; }
-  .note { color:var(--muted); font-size:12.5px; margin:14px 0 0; }
-  hr { border:0; border-top:1px solid var(--line-soft); margin:16px 0; }
-
-  /* ---- connection ---- */
-  .conn { display:flex; flex-direction:column; gap:9px; }
-  .connrow { display:flex; align-items:center; gap:12px; }
-  .connlabel { color:var(--faint); font-size:12px; width:76px; flex:none; letter-spacing:.2px; }
-  .connval {
-    flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-    background:var(--field); border:1px solid var(--line); border-radius:9px;
-    padding:9px 12px; font-size:12.5px;
-  }
-  .connval.hot { color:var(--accent); border-color:#4a3327; }
-  details { margin-top:14px; }
-  details > summary { cursor:pointer; font-size:12.5px; color:var(--muted); width:fit-content; }
-  details > summary:hover { color:var(--text); }
-  .example {
-    background:var(--field); border:1px solid var(--line); border-radius:10px; padding:14px;
-    overflow:auto; font-size:12px; color:#c3c9d4; margin:10px 0 0; white-space:pre; line-height:1.6;
-  }
-
-  /* ---- steps ---- */
-  .steps { display:flex; flex-direction:column; gap:5px; margin-bottom:14px; }
-  .step { display:flex; gap:9px; align-items:baseline; font-size:12.5px; color:var(--muted); }
-  .step b { color:var(--accent); font-weight:600; font-variant-numeric:tabular-nums; }
-
-  /* ---- lists ---- */
-  .list { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
-  .item { background:var(--field); border:1px solid var(--line-soft); border-radius:10px; padding:11px 13px; }
-  .item.row { flex-wrap:nowrap; }
-  .item.row .grow { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .item:hover { border-color:var(--line); }
-  .empty { color:var(--faint); font-size:12.5px; margin:14px 0 0; }
-
-  .bar { height:5px; background:var(--field); border:1px solid var(--line-soft); border-radius:999px; overflow:hidden; margin-top:9px; }
-  .fill { height:100%; background:var(--ok); transition:width .4s ease; }
-
-  .toast {
-    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(16px);
-    background:var(--panel-2); border:1px solid var(--line); padding:11px 18px; border-radius:10px;
-    opacity:0; transition:.25s; pointer-events:none; max-width:80vw; z-index:20; font-size:13px;
-    box-shadow:0 8px 24px rgba(0,0,0,.35);
-  }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  .toast.ok { border-color:#2f4a3d; } .toast.err { border-color:#4c2f31; }
-
-  .modal { position:fixed; inset:0; background:rgba(6,7,9,.72); display:flex; align-items:center; justify-content:center; z-index:30; backdrop-filter:blur(2px); }
-  .modal[hidden] { display:none; }
-  .modal-box { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:22px; width:min(560px,92vw); box-shadow:0 24px 60px rgba(0,0,0,.5); }
-  .modal-box h3 { margin:0 0 6px; font-size:15px; }
-  .keyreveal { background:var(--field); border:1px solid #4a3327; border-radius:9px; padding:10px 12px; font-size:12.5px; color:var(--accent); word-break:break-all; }
+.nav{font-size:13px;padding:10px 9px}.nav span{margin-right:9px}
+/* Desktop workspace: connection first, compact provider rows, fewer competing panels. */
+main{max-width:1540px;padding:32px 38px}.page-heading{margin-bottom:22px}.stats{max-width:780px;margin-bottom:24px}.stat{padding:11px 18px}.stat b{font-size:22px}.grid{grid-template-columns:minmax(0,1.4fr) minmax(350px,.8fr)}.card{padding:22px}.note{font-size:12px}details{border-top:1px solid var(--border);padding-top:12px}summary{font-size:11px}.form-inline{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}.form-inline .field{margin:0;min-width:180px;flex:1}.form-inline .key-input{flex:2}.provider-table th,.provider-table td{padding:12px 10px}.provider-table td:first-child{max-width:240px;white-space:normal;overflow-wrap:anywhere}.provider-table .row{flex-wrap:nowrap}.provider-table .small{white-space:nowrap}table .reason{white-space:normal;min-width:200px;max-width:330px;overflow-wrap:anywhere;font-size:11px;color:var(--muted)}.connection-value code{font-size:13px;padding:12px}.stats .stat:first-child b{color:var(--accent)}#comboPicker{flex:1;min-width:0}#comboSelection code{font-size:11px;overflow-wrap:anywhere}.split{flex-wrap:wrap}.card-head .meta{font-weight:400}
+@media(max-width:1150px){.grid{grid-template-columns:1fr}main{padding:28px}.form-inline .row{margin-top:6px}}
+@media(max-width:720px){main{padding:22px 18px}.card{padding:18px}.form-inline{display:grid;grid-template-columns:1fr;width:100%}.form-inline .field{min-width:0}.connection-value code{font-size:11px}.stat{padding:11px}.grid{grid-template-columns:minmax(0,1fr)}.provider-table{min-width:790px}}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><span class="mark" aria-hidden="true"></span><span class="brandname">imgrouter</span></div>
-  <div id="pills" class="pills"></div>
-  <div class="spacer"></div>
-  <label class="auto"><input type="checkbox" id="auto" checked /> auto</label>
-  <button id="run" class="primary">Run now</button>
-</header>
-
-<main>
-  <section class="card wide">
-    <div class="head"><h2>Your imgrouter API</h2><span class="hint">point any Gemini-native client here</span></div>
-    <div class="conn">
-      <div class="connrow">
-        <span class="connlabel">Local URL</span>
-        <code id="gBase" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gBase">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">API key</span>
-        <code id="gKey" class="connval hot">— create one in “imgrouter API keys” —</code>
-        <button type="button" class="icon" data-copysrc="gKey">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Model</span>
-        <code id="gModel" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gModel">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">OpenAI URL</span>
-        <code id="gOpenai" class="connval">…</code>
-        <button type="button" class="icon" data-copysrc="gOpenai">copy</button>
-      </div>
-      <div class="connrow">
-        <span class="connlabel">Access</span>
-        <label class="auto"><input type="checkbox" id="reqKey" /> require an API key for requests</label>
-      </div>
-    </div>
-    <details>
-      <summary>example request</summary>
-      <pre id="gExample" class="example"></pre>
-    </details>
-    <p class="note">imgrouter sits between your apps and Google Gemini, rotating your Gemini keys automatically so you never expose them.</p>
-  </section>
-
-  <div class="cards cards--a">
-    <section class="card">
-      <div class="head"><h2>imgrouter API keys</h2><span class="count" id="ckCount"></span></div>
-      <div class="steps">
-        <div class="step"><b>1</b> Create a key per app.</div>
-        <div class="step"><b>2</b> Paste it into your client — not a Gemini key.</div>
-      </div>
-      <form id="ckForm" class="row">
-        <input id="ckLabel" placeholder="label, e.g. my-app" class="grow" />
-        <button class="primary">Create key</button>
-      </form>
-      <div id="ckList" class="list"></div>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Gemini keys</h2><span class="count" id="accCount"></span></div>
-      <p class="muted" style="margin:0 0 14px">The Google Gemini keys imgrouter rotates through. Add as many as you like — each carries its own daily quota.</p>
-      <form id="accForm" class="col">
-        <div class="row">
-          <input id="accKey" placeholder="Gemini API key (AIza…)" required class="grow" />
-          <input id="accLimit" type="number" min="1" placeholder="day limit" style="width:110px" />
-        </div>
-        <div class="row">
-          <input id="accLabel" placeholder="label (optional)" />
-          <div class="spacer"></div>
-          <button type="button" id="accTest">Test</button>
-          <button class="primary">Add</button>
-        </div>
-      </form>
-      <details>
-        <summary>paste many at once</summary>
-        <form id="bulkForm" class="col" style="margin-top:10px">
-          <textarea id="bulkKeys" rows="4" placeholder="AIza…&#10;label,AIza…&#10;label,AIza…,5   (optional daily limit)"></textarea>
-          <div class="row">
-            <span class="muted">label,key[,dayLimit] — comma / tab / pipe / space</span>
-            <div class="spacer"></div>
-            <button class="primary">Import</button>
-          </div>
-        </form>
-      </details>
-      <hr />
-      <div class="row">
-        <input id="accSearch" placeholder="search label / id" class="grow" />
-        <select id="accStatus">
-          <option value="">all status</option>
-          <option value="active">active</option>
-          <option value="blocked">blocked</option>
-          <option value="disabled">disabled</option>
-        </select>
-      </div>
-      <div id="accList" class="list"></div>
-      <div class="row" style="margin-top:12px">
-        <button id="accSelAll" class="icon">select page</button>
-        <button id="accPrev" class="icon">‹</button>
-        <span id="accPage" class="muted"></span>
-        <button id="accNext" class="icon">›</button>
-        <div class="spacer"></div>
-        <button id="accDelSel" class="danger icon">Delete selected</button>
-        <button id="accDelBlocked" class="danger icon">Delete blocked</button>
-      </div>
-    </section>
-  </div>
-
-  <div class="cards cards--b">
-    <section class="card">
-      <div class="head"><h2>New project</h2><span class="hint">batch generate</span></div>
-      <form id="projForm" class="col">
-        <div class="row">
-          <input id="pTitle" placeholder="title" required class="grow" />
-          <input id="pRef" placeholder="ref image path (optional)" class="grow" />
-        </div>
-        <input id="pStyle" placeholder="style prompt, e.g. flat vector, same character (optional)" />
-        <textarea id="pPrompts" rows="6" placeholder="one prompt per line..."></textarea>
-        <div class="row">
-          <input id="pCount" type="number" min="1" placeholder="…or N generic scenes" style="width:210px" />
-          <div class="spacer"></div>
-          <button class="primary">Create</button>
-        </div>
-        <p class="note" style="margin:0">No ref path? Scene #1 is generated first and anchors the rest for character consistency.</p>
-      </form>
-    </section>
-
-    <section class="card">
-      <div class="head"><h2>Projects</h2></div>
-      <div id="projList" class="list"></div>
-    </section>
-  </div>
-</main>
-
-<div id="toast" class="toast"></div>
-
-<div id="keyModal" class="modal" hidden>
-  <div class="modal-box">
-    <h3>API key created</h3>
-    <p class="muted" style="margin:0 0 12px">Copy it now and store it safely — paste it into your client app.</p>
-    <div class="connrow">
-      <div id="keyModalVal" class="keyreveal grow"></div>
-      <button type="button" class="icon" data-copysrc="keyModalVal">copy</button>
-    </div>
-    <div class="row" style="justify-content:flex-end;margin-top:16px">
-      <button class="primary" id="keyModalClose">Done</button>
-    </div>
-  </div>
-</div>
-
+<aside><div class="brand">imgrouter</div><div class="caption">IMAGE API GATEWAY</div>
+<nav aria-label="Workspace"><button class="nav active" data-view="overview"><span>01</span>Overview</button><button class="nav" data-view="providers"><span>02</span>Provider keys</button><button class="nav" data-view="models"><span>03</span>Models & combos</button><button class="nav" data-view="logs"><span>04</span>Request logs</button></nav><div class="sidebar-note">One connection for your apps.<br>Images stay in your workflow.</div></aside>
+<div class="workspace"><header><span>Workspace / <b id="crumb">Overview</b></span><span id="connection" class="status" role="status">Connecting…</span><label class="check"><input id="live" type="checkbox" checked>Live updates</label><button class="small" id="refresh">Refresh</button></header>
+<main><div class="page-heading"><div class="eyebrow">IMGROUTER / GATEWAY</div><h1 id="pageTitle">Overview</h1><p id="pageDescription">Connect your application with one URL, key, and model.</p></div>
+<div id="error" class="error" role="alert" hidden></div>
+<div class="stats"><div class="stat"><b id="healthyCount">—</b><span>Keys ready now</span></div><div class="stat"><b id="successCount">—</b><span>Successful attempts</span></div><div class="stat"><b id="failedCount">—</b><span>Failed attempts</span></div></div>
+<section data-panel="overview"><div class="grid"><div class="card"><div class="card-head"><h2>Your app connection</h2><span class="badge">OpenAI image API</span></div>
+<div class="field"><span>Base URL</span><div class="connection-value"><code id="baseUrl">http://127.0.0.1:8787/v1</code><button class="small" data-copy="baseUrl">Copy</button></div></div>
+<div class="field"><label for="connectionKey">API key imgrouter</label><select id="connectionKey" aria-label="Choose an imgrouter client key"><option value="">Connecting to local router…</option></select><div class="connection-value"><code id="keyValue">Open the running local router to load your API key</code><button class="small" id="revealKey" aria-pressed="true">Hide</button><button class="small" id="copyKey">Copy</button></div></div>
+<div class="field"><label for="connectionModel">Model / combo</label><div class="connection-value"><select id="connectionModel"><option value="gemini-2.5-flash-image">gemini-2.5-flash-image</option></select><button class="small" id="copyModel">Copy</button></div></div>
+<p class="hint">Copy these values into your application.</p>
+<details><summary>Gemini-native connection & request example</summary><div class="field" style="margin-top:12px"><span>Gemini base URL</span><div class="connection-value"><code id="geminiUrl">http://127.0.0.1:8787/v1beta</code><button class="small" data-copy="geminiUrl">Copy</button></div></div><pre id="example"></pre></details>
+<details><summary>Send a character reference from your app</summary><p class="note">Send the same reference with every scene. Your app stores the character; imgrouter does not remember earlier requests. Reference requests stay on the first model in a combo, even if fallback is enabled.</p><pre>{
+  "model": "your-model-or-combo",
+  "prompt": "Same character, walking through a rainy street",
+  "reference_images": ["data:image/png;base64,..."],
+  "response_format": "b64_json"
+}</pre><p class="hint">POST /v1/images/generations · JSON extension: reference_images. Also accepts JSON /v1/images/edits with image as a data URL. Multipart uploads are not supported. Up to 3 references, 8 MiB each. No remote image fetching.</p></details>
+</div><div class="stack"><div class="card"><div class="card-head"><h2>Client keys</h2><span class="meta">For your applications</span></div><form id="clientForm"><div class="field"><label for="clientLabel">Application name</label><input id="clientLabel" placeholder="e.g. horror-video-app" required maxlength="100"></div><button class="primary">Create API key</button></form><div id="clients" class="list"></div></div><div class="card"><div class="card-head"><h2>Connection test</h2><span class="badge">Uses provider quota</span></div><p class="hint">Generate one small test image using the selected app key and model.</p><button class="primary" id="generateTest" style="margin-top:14px">Test image generation</button><p class="hint" id="testSummary" role="status"></p></div></div></div></section>
+<section data-panel="providers" hidden><div class="stack"><div class="card"><div class="card-head"><h2>Add Gemini key</h2><span class="hint">Provider keys stay inside imgrouter</span></div><form id="providerForm" class="form-inline"><div class="field"><label for="providerLabel">Label</label><input id="providerLabel" placeholder="Main project" maxlength="100"></div><div class="field key-input"><label for="providerKey">Gemini API key</label><input id="providerKey" type="password" autocomplete="off" required placeholder="AIza…"></div><div class="row"><button class="primary">Add key</button><button type="button" id="testProvider">Check access</button></div></form><details><summary>Import multiple keys</summary><form id="bulkForm"><div class="field" style="margin-top:12px"><label for="bulkKeys">One key per line, or label,key</label><textarea id="bulkKeys" required autocomplete="off" spellcheck="false"></textarea></div><button>Import keys</button></form></details></div><div class="card"><div class="card-head"><h2>Provider keys <span id="providerCount" class="meta"></span></h2><input id="providerSearch" aria-label="Search provider keys" placeholder="Search labels…" style="max-width:250px"></div><div class="table-wrap"><table class="provider-table"><thead><tr><th>Key label</th><th>Status</th><th>Used today</th><th>Cooldown</th><th>Quota</th><th>Actions</th></tr></thead><tbody id="providers"></tbody></table></div><p class="hint">Provider controls daily quota. Check access validates the key; the image test verifies generation.</p></div></div></section>
+<section data-panel="models" hidden><div class="grid"><div class="card"><div class="card-head"><h2>Create or update combo</h2><span class="badge">Gemini routing</span></div><form id="comboForm"><div class="field"><label for="comboName">Combo name your app will call</label><input id="comboName" required pattern="[a-z][a-z0-9_-]{0,63}" placeholder="character-images"></div><div class="field"><label for="comboPicker">Models · priority from top to bottom</label><div class="row"><select id="comboPicker" aria-label="Choose a model for this combo"></select><button type="button" id="addComboModel">Add to combo</button></div><div id="comboSelection" class="list"></div></div><label class="check" style="margin-bottom:16px"><input type="checkbox" id="comboFallback">Allow model fallback for requests without references</label><button class="primary">Save combo</button></form><p class="hint">References stay on the first model. Saving the same combo name updates it.</p></div><div class="stack"><div class="card"><div class="card-head"><h2>Combos</h2></div><div id="combos" class="list"></div></div><div class="card"><div class="card-head"><h2>Available routes</h2><span class="meta">GET /v1/models</span></div><div class="row"><select id="discoveryKey" aria-label="Provider key for model discovery" style="flex:1"></select><button id="syncModels">Sync from Gemini</button></div><p class="hint">Listing a model does not prove generation access.</p><div id="models" class="list"></div><details><summary>Add a model ID manually</summary><form id="modelForm" style="margin-top:18px"><div class="field"><label for="modelId">Add Gemini model ID</label><input id="modelId" placeholder="gemini-…" pattern="gemini-[a-zA-Z0-9._-]+" required></div><button>Add model</button></form></details></div></div></div></section>
+<section data-panel="logs" hidden><div class="card"><div class="card-head"><h2>Recent provider requests</h2><span class="meta">Latest 100 attempts · summary covers last 1,000</span></div><p class="hint" style="margin-bottom:15px">One row per attempt. Labels only; secret keys and prompts are excluded.</p><div class="table-wrap"><table><thead><tr><th>Time</th><th>Requested</th><th>Actual model</th><th>Provider key</th><th>Status</th><th>Duration</th><th>Reason</th></tr></thead><tbody id="logs"></tbody></table></div></div></section>
+</main></div><div id="toast" role="status" hidden></div>
+<dialog id="testDialog"><div class="card-head"><h2>Image connection test</h2><button id="closeTest" class="small">Close</button></div><p id="testResult" role="status"></p><img id="testImage" alt="Test image returned through imgrouter" hidden style="max-width:100%;max-height:380px;display:block;margin:16px auto 0;border-radius:5px"></dialog><dialog id="keyDialog"><h2>API key created</h2><p class="note">Use this imgrouter key in your application.</p><pre id="newKey"></pre><div class="row"><button id="copyNewKey" class="primary">Copy key</button><button id="closeDialog">Done</button></div></dialog>
+<!-- IMGROUTER_BOOTSTRAP -->
 <script>
-  const $ = (s, r = document) => r.querySelector(s);
-  const esc = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-
-  async function api(path, opts) {
-    const res = await fetch(path, opts);
-    const text = await res.text();
-    let body;
-    try { body = text ? JSON.parse(text) : {}; } catch { body = { error: text }; }
-    if (!res.ok) throw new Error(body.error || res.status);
-    return body;
-  }
-
-  function toast(msg, ok = true) {
-    const t = $("#toast");
-    t.textContent = msg;
-    t.className = "toast show " + (ok ? "ok" : "err");
-    clearTimeout(t._h);
-    t._h = setTimeout(() => (t.className = "toast"), 3500);
-  }
-
-  function until(ms) {
-    if (!ms) return "—";
-    const d = ms - Date.now();
-    if (d <= 0) return "now";
-    const s = Math.round(d / 1000);
-    if (s < 60) return s + "s";
-    const m = Math.round(s / 60);
-    return m < 60 ? m + "m" : Math.round(m / 60) + "h";
-  }
-
-  async function copyText(text) {
-    if (!text || text.startsWith("—") || text === "…") { toast("Nothing to copy yet", false); return; }
-    try { await navigator.clipboard.writeText(text); toast("Copied"); }
-    catch { toast("Copy failed — select manually", false); }
-  }
-
-  document.addEventListener("click", (ev) => {
-    const b = ev.target.closest("[data-copysrc]");
-    if (!b) return;
-    const el = document.getElementById(b.dataset.copysrc);
-    if (el) copyText(el.dataset.full || el.textContent);
-  });
-
-  let clientKeys = [];
-  const revealed = new Set();
-  const maskKey = (k) => (k && k.length > 16 ? `${k.slice(0, 9)}…${k.slice(-4)}` : k || "");
-
-  function showKeyModal(key) {
-    $("#keyModalVal").textContent = key;
-    $("#keyModal").hidden = false;
-  }
-
-  function renderExample() {
-    const base = $("#gBase").textContent;
-    const model = $("#gModel").textContent;
-    const key = clientKeys[0]?.key || "YOUR_IMGROUTER_KEY";
-    $("#gExample").textContent =
-`curl -X POST "${base}/models/${model}:generateContent" \\
-  -H "x-goog-api-key: ${key}" \\
-  -H "content-type: application/json" \\
-  -d '{"contents":[{"parts":[{"text":"a red cube"}]}],"generationConfig":{"responseModalities":["TEXT","IMAGE"]}}'`;
-  }
-
-  function renderConnection(status) {
-    const models = (status.models || []).map((m) => String(m).replace(/^models\//, ""));
-    $("#gBase").textContent = location.origin + (status.gatewayBase || "/v1beta");
-    $("#gOpenai").textContent = location.origin + (status.openaiBase || "/v1");
-    $("#gModel").textContent = models[0] || "gemini-2.5-flash-image";
-    $("#reqKey").checked = status.requireApiKey !== false;
-    renderExample();
-  }
-
-  const PAGE_SIZE = 25;
-  let allAccounts = [];
-  let selected = new Set();
-  let page = 1;
-  let pageIds = [];
-
-  function renderPills(status) {
-    const j = status.jobs || {};
-    const items = [
-      ["capacity", status.capacity, status.capacity > 0 ? "ok" : "warn"],
-      ["gemini keys", status.healthyKeys, status.healthyKeys > 0 ? "ok" : "warn"],
-      ["done", j.done || 0, "ok"],
-      ["deferred", j.deferred || 0, j.deferred ? "warn" : ""],
-      ["failed", j.failed || 0, j.failed ? "err" : ""],
-      ["reset", until(status.nextWakeAt), ""],
-    ];
-    $("#pills").innerHTML = items.map(([k, v, c]) => `<span class="pill ${c}"><b>${esc(v)}</b> ${esc(k)}</span>`).join("");
-  }
-
-  function accountRow(a) {
-    const tone = a.status === "active" ? "ok" : a.status === "blocked" ? "warn" : "err";
-    const checked = selected.has(a.id) ? " checked" : "";
-    return `<div class="row item">
-      <input type="checkbox" data-sel="${esc(a.id)}"${checked} />
-      <span class="grow"><b>${esc(a.label)}</b> <span class="muted">${esc(a.id.slice(0, 8))}</span></span>
-      <span class="pill ${tone}">${esc(a.status)}</span>
-      <span class="muted">${a.dayUsed}/${a.dayLimit}</span>
-      <span class="muted">ok ${a.okCount} · fail ${a.failCount}</span>
-      <span class="muted">cool ${until(a.cooldownUntil)}</span>
-      <button class="icon" data-test="${esc(a.id)}" title="Test key">test</button>
-      <button class="danger icon" data-del="${esc(a.id)}">✕</button>
-    </div>`;
-  }
-
-  function renderAccounts() {
-    const needle = $("#accSearch").value.trim().toLowerCase();
-    const statusFilter = $("#accStatus").value;
-    const filtered = allAccounts.filter((a) =>
-      (!statusFilter || a.status === statusFilter) &&
-      (!needle || a.label.toLowerCase().includes(needle) || a.id.toLowerCase().includes(needle)));
-
-    const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-    if (page > pages) page = pages;
-    const start = (page - 1) * PAGE_SIZE;
-    const slice = filtered.slice(start, start + PAGE_SIZE);
-    pageIds = slice.map((a) => a.id);
-
-    $("#accList").innerHTML = slice.length
-      ? slice.map(accountRow).join("")
-      : '<p class="empty">No Gemini keys yet — add one above.</p>';
-
-    const active = allAccounts.filter((a) => a.status === "active").length;
-    const blocked = allAccounts.filter((a) => a.status === "blocked").length;
-    $("#accCount").textContent = `${allAccounts.length} total · ${active} active · ${blocked} blocked`;
-    $("#accPage").textContent = filtered.length ? `${start + 1}–${Math.min(start + PAGE_SIZE, filtered.length)} of ${filtered.length}` : "0 of 0";
-    $("#accPrev").disabled = page <= 1;
-    $("#accNext").disabled = page >= pages;
-  }
-
-  function renderProjects(projects) {
-    if (!projects.length) { $("#projList").innerHTML = '<p class="empty">No projects yet.</p>'; return; }
-    $("#projList").innerHTML = projects.map((p) => {
-      const pr = p.progress || { total: 0, done: 0, failed: 0, deferred: 0, running: 0 };
-      const pct = pr.total ? Math.round((pr.done / pr.total) * 100) : 0;
-      return `<div class="item">
-        <div class="row">
-          <b class="grow">${esc(p.title)}</b>
-          <span class="muted">${pr.done}/${pr.total} · ${pct}%</span>
-          ${pr.deferred ? `<span class="pill warn">${pr.deferred} deferred</span>` : ""}
-          ${pr.running ? `<span class="pill">${pr.running} running</span>` : ""}
-          ${pr.failed ? `<span class="pill err">${pr.failed} failed</span>` : ""}
-        </div>
-        <div class="bar"><div class="fill" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join("");
-  }
-
-  function renderClientKeys(keys) {
-    clientKeys = keys;
-    $("#ckCount").textContent = keys.length ? `${keys.length} key(s)` : "none yet";
-    $("#ckList").innerHTML = keys.length
-      ? keys.map((k) => {
-          const shown = revealed.has(k.id) ? k.key : maskKey(k.key);
-          return `<div class="item row">
-            <span class="grow"><b>${esc(k.label)}</b> <code class="muted" data-keyval="${esc(k.id)}">${esc(shown)}</code></span>
-            <span class="muted">uses ${k.uses}</span>
-            <span class="muted">${k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleString() : "never used"}</span>
-            <button class="icon" data-reveal="${esc(k.id)}">${revealed.has(k.id) ? "hide" : "reveal"}</button>
-            <button class="icon" data-copy="${esc(k.key)}">copy</button>
-            <button class="danger icon" data-ckdel="${esc(k.id)}">✕</button>
-          </div>`;
-        }).join("")
-      : '<p class="empty">No keys yet — create one and hand it to your client app.</p>';
-
-    const primary = keys[0]?.key;
-    $("#gKey").textContent = primary ? maskKey(primary) : "— create one in “imgrouter API keys” —";
-    $("#gKey").dataset.full = primary || "";
-    renderExample();
-  }
-
-  async function refresh() {
-    try {
-      const [status, accounts, projects, keysRes] = await Promise.all([
-        api("/status"), api("/accounts"), api("/projects"), api("/clientkeys"),
-      ]);
-      allAccounts = accounts.accounts || [];
-      const ids = new Set(allAccounts.map((a) => a.id));
-      for (const id of [...selected]) if (!ids.has(id)) selected.delete(id);
-      renderPills(status);
-      renderConnection(status);
-      renderAccounts();
-      renderProjects(projects.projects || []);
-      renderClientKeys(keysRes.clientKeys || []);
-    } catch { /* quiet on background polls */ }
-  }
-
-  $("#ckForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    try {
-      const r = await api("/clientkeys", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#ckLabel").value }) });
-      $("#ckForm").reset();
-      showKeyModal(r.key);
-      refresh();
-    } catch (e) { toast(e.message, false); }
-  });
-
-  $("#keyModalClose").addEventListener("click", () => { $("#keyModal").hidden = true; });
-  $("#keyModal").addEventListener("click", (ev) => { if (ev.target === $("#keyModal")) $("#keyModal").hidden = true; });
-
-  $("#reqKey").addEventListener("change", async (ev) => {
-    try { await api("/settings", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requireApiKey: ev.target.checked }) }); toast(ev.target.checked ? "API key required" : "API key not required"); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  $("#ckList").addEventListener("click", async (ev) => {
-    const revealBtn = ev.target.closest("button[data-reveal]");
-    if (revealBtn) {
-      const id = revealBtn.dataset.reveal;
-      if (revealed.has(id)) revealed.delete(id); else revealed.add(id);
-      renderClientKeys(clientKeys);
-      return;
-    }
-    const copyBtn = ev.target.closest("button[data-copy]");
-    if (copyBtn) { copyText(copyBtn.dataset.copy); return; }
-    const delBtn = ev.target.closest("button[data-ckdel]");
-    if (!delBtn) return;
-    if (!confirm("Revoke this client key?")) return;
-    try { await api("/clientkeys/" + delBtn.dataset.ckdel, { method: "DELETE" }); toast("Key revoked"); refresh(); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  $("#accList").addEventListener("change", (ev) => {
-    const cb = ev.target.closest("input[data-sel]");
-    if (!cb) return;
-    if (cb.checked) selected.add(cb.dataset.sel); else selected.delete(cb.dataset.sel);
-  });
-
-  async function testKey(payload) {
-    try {
-      const r = await api("/accounts/test", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      toast(r.message, r.ok && r.hasImageModel !== false);
-      return r;
-    } catch (e) { toast(e.message, false); return null; }
-  }
-
-  $("#accList").addEventListener("click", async (ev) => {
-    const tbtn = ev.target.closest("button[data-test]");
-    if (tbtn) {
-      tbtn.disabled = true; tbtn.textContent = "…";
-      await testKey({ id: tbtn.dataset.test });
-      tbtn.disabled = false; tbtn.textContent = "test";
-      return;
-    }
-    const btn = ev.target.closest("button[data-del]");
-    if (!btn) return;
-    try { await api("/accounts/" + btn.dataset.del, { method: "DELETE" }); selected.delete(btn.dataset.del); toast("Account removed"); refresh(); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  $("#accTest").addEventListener("click", async () => {
-    const apiKey = $("#accKey").value.trim();
-    if (!apiKey) { toast("Enter a Gemini key to test first", false); $("#accKey").focus(); return; }
-    const btn = $("#accTest");
-    btn.disabled = true; btn.textContent = "Testing…";
-    const r = await testKey({ apiKey });
-    btn.disabled = false; btn.textContent = "Test";
-    if (r?.ok) toast("OK — now click Add to save it", true);
-  });
-
-  $("#accSearch").addEventListener("input", () => { page = 1; renderAccounts(); });
-  $("#accStatus").addEventListener("change", () => { page = 1; renderAccounts(); });
-  $("#accPrev").addEventListener("click", () => { if (page > 1) { page--; renderAccounts(); } });
-  $("#accNext").addEventListener("click", () => { page++; renderAccounts(); });
-
-  $("#accSelAll").addEventListener("click", () => {
-    const allOn = pageIds.length && pageIds.every((id) => selected.has(id));
-    for (const id of pageIds) { if (allOn) selected.delete(id); else selected.add(id); }
-    renderAccounts();
-  });
-
-  $("#accDelSel").addEventListener("click", async () => {
-    if (!selected.size) { toast("Nothing selected", false); return; }
-    if (!confirm(`Delete ${selected.size} account(s)?`)) return;
-    try { const r = await api("/accounts/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ids: [...selected] }) }); selected.clear(); toast(`Removed ${r.removed}`); refresh(); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  $("#accDelBlocked").addEventListener("click", async () => {
-    const blocked = allAccounts.filter((a) => a.status === "blocked").length;
-    if (!blocked) { toast("No blocked accounts", false); return; }
-    if (!confirm(`Delete ${blocked} blocked account(s)?`)) return;
-    try { const r = await api("/accounts/delete", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ statuses: ["blocked"] }) }); toast(`Removed ${r.removed}`); refresh(); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  $("#bulkForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const keys = $("#bulkKeys").value;
-    if (!keys.trim()) return;
-    try {
-      const r = await api("/accounts/bulk", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ keys }) });
-      $("#bulkKeys").value = "";
-      const extra = r.invalid && r.invalid.length ? ` · ${r.invalid.length} invalid` : "";
-      toast(`Added ${r.added} · skipped ${r.skipped}${extra}`);
-      refresh();
-    } catch (e) { toast(e.message, false); }
-  });
-
-  $("#accForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const dayLimit = $("#accLimit").value ? Number($("#accLimit").value) : undefined;
-    try {
-      await api("/accounts", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ label: $("#accLabel").value, apiKey: $("#accKey").value, dayLimit }) });
-      $("#accForm").reset(); toast("Gemini key added — you can add another"); refresh();
-    } catch (e) { toast(e.message, false); }
-  });
-
-  $("#projForm").addEventListener("submit", async (ev) => {
-    ev.preventDefault();
-    const prompts = $("#pPrompts").value.split("\n").map((s) => s.trim()).filter(Boolean);
-    const count = $("#pCount").value ? Number($("#pCount").value) : undefined;
-    const payload = {
-      title: $("#pTitle").value,
-      stylePrompt: $("#pStyle").value || undefined,
-      refImagePath: $("#pRef").value || undefined,
-    };
-    if (prompts.length) payload.prompts = prompts;
-    else if (count) payload.count = count;
-    try {
-      await api("/projects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      $("#projForm").reset(); toast("Project created"); refresh();
-    } catch (e) { toast(e.message, false); }
-  });
-
-  $("#run").addEventListener("click", async () => {
-    try { const s = await api("/run", { method: "POST" }); toast("done " + s.done + " · deferred " + s.deferred); refresh(); }
-    catch (e) { toast(e.message, false); }
-  });
-
-  let timer = null;
-  function schedule() {
-    if (timer) clearInterval(timer);
-    if ($("#auto").checked) timer = setInterval(refresh, 5000);
-  }
-  $("#auto").addEventListener("change", schedule);
-  schedule();
-  refresh();
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const gatewayOrigin=/^https?:$/.test(location.protocol)?location.origin:"http://127.0.0.1:8787";
+$("#baseUrl").textContent=gatewayOrigin+"/v1";$("#geminiUrl").textContent=gatewayOrigin+"/v1beta";
+const boot=JSON.parse(document.getElementById('gatewayBootstrap')?.textContent||'{}');
+let clients=boot.clientKeys||[],providers=[],modelList=[],comboList=[],revealed=true,busy=false,comboSelection=[];
+const names={overview:['Overview','Connect your application with one URL, key, and model.'],providers:['Provider keys','Manage the Gemini credentials behind your gateway.'],models:['Models & combos','Choose the model names your application can call.'],logs:['Request logs','Inspect routing and provider response status.']};
+function view(){const key=names[location.hash.slice(1)]?location.hash.slice(1):'overview';document.querySelectorAll('[data-panel]').forEach(e=>e.hidden=e.dataset.panel!==key);document.querySelectorAll('[data-view]').forEach(e=>{const active=e.dataset.view===key;e.classList.toggle('active',active);if(active)e.setAttribute('aria-current','page');else e.removeAttribute('aria-current');});$('#pageTitle').textContent=$('#crumb').textContent=names[key][0];$('#pageDescription').textContent=names[key][1];}
+document.querySelectorAll('[data-view]').forEach(e=>e.addEventListener('click',()=>location.hash=e.dataset.view));window.addEventListener('hashchange',view);view();
+async function api(path,body,method){const res=await fetch(path,body===undefined?undefined:{method:method||'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});let result;try{result=await res.json();}catch{throw Error('Invalid server response');}if(!res.ok)throw Error(typeof result.error==='string'?result.error:result.error?.message||`HTTP ${res.status}`);return result;}
+function toast(message,bad=false){$('#toast').textContent=message;$('#toast').className=bad?'bad':'';$('#toast').hidden=false;clearTimeout(toast.timer);toast.timer=setTimeout(()=>$('#toast').hidden=true,4500);}
+async function copy(value){if(!value){toast('Nothing to copy yet',true);return;}try{await navigator.clipboard.writeText(value);toast('Copied');}catch{toast('Clipboard unavailable. Select and copy the value manually.',true);}}
+document.querySelectorAll('[data-copy]').forEach(b=>b.addEventListener('click',()=>copy(document.getElementById(b.dataset.copy).textContent)));
+function key(){return clients.find(k=>k.id===$('#connectionKey').value)?.key||'';}
+function renderConnection(){const value=key();$('#keyValue').textContent=value?(revealed?value:value.slice(0,9)+'…'+value.slice(-4)):'Open the running local router to load your API key';$('#copyKey').disabled=!value;$('#revealKey').disabled=!value;$('#example').textContent=`POST ${gatewayOrigin}/v1/images/generations\nAuthorization: Bearer YOUR_IMGROUTER_KEY\nContent-Type: application/json\n\n`+JSON.stringify({model:$('#connectionModel').value,prompt:'A red cube',response_format:'b64_json'},null,2);}
+$('#revealKey').addEventListener('click',()=>{revealed=!revealed;$('#revealKey').textContent=revealed?'Hide':'Show';$('#revealKey').setAttribute('aria-pressed',String(revealed));renderConnection();});$('#connectionKey').addEventListener('change',renderConnection);$('#connectionModel').addEventListener('change',renderConnection);$('#copyKey').addEventListener('click',()=>copy(key()));$('#copyModel').addEventListener('click',()=>copy($('#connectionModel').value));$('#copyNewKey').addEventListener('click',()=>copy($('#newKey').textContent));$('#closeDialog').addEventListener('click',()=>$('#keyDialog').close());
+function cooldown(ts){return ts>Date.now()?Math.ceil((ts-Date.now())/1000)+'s':'—';}
+function renderProviders(){const query=$('#providerSearch').value.trim().toLowerCase();const rows=providers.filter(k=>k.label.toLowerCase().includes(query));$('#providerCount').textContent='· '+providers.length;$('#providers').innerHTML=rows.length?rows.map(k=>{const status=k.status==='active'?(k.cooldownUntil>Date.now()?'cooldown':'active'):k.status;return `<tr><td><b>${esc(k.label)}</b></td><td><span class="badge ${status==='active'?'ok':'warn'}">${esc(status)}</span></td><td>${k.dayUsed}</td><td>${cooldown(k.cooldownUntil)}</td><td>${k.status==='blocked'?'Reached':k.status==='disabled'?'Paused':'Provider-managed'}</td><td><div class="row"><button class="small" data-test="${esc(k.id)}">Check</button><button class="small" data-sync-key="${esc(k.id)}">Sync models</button><button class="small" data-toggle-provider="${esc(k.id)}">${k.status==='disabled'?'Enable':'Disable'}</button><button class="small danger" data-delete-provider="${esc(k.id)}">Remove</button></div></td></tr>`;}).join(''):'<tr><td colspan="6" class="empty">No matching provider keys.</td></tr>';}
+function renderComboSelection(){const native=modelList.filter(m=>m.startsWith('gemini-'));options($('#comboPicker'),native.filter(m=>!comboSelection.includes(m)).map(m=>[m,m]),$('#comboPicker').value,'No more models');$('#addComboModel').disabled=!$('#comboPicker').value;$('#comboSelection').innerHTML=comboSelection.length?comboSelection.map((m,i)=>`<div class="item split"><code>${i+1}. ${esc(m)}</code><div class="row"><button type="button" class="small" data-combo-up="${i}" aria-label="Move model up" ${i===0?'disabled':''}>↑</button><button type="button" class="small" data-combo-down="${i}" aria-label="Move model down" ${i===comboSelection.length-1?'disabled':''}>↓</button><button type="button" class="small danger" data-combo-remove="${i}">Remove</button></div></div>`).join(''):'<div class="empty">Choose a model above.</div>';}
+$('#addComboModel').addEventListener('click',()=>{const m=$('#comboPicker').value;if(m&&!comboSelection.includes(m)){comboSelection.push(m);renderComboSelection();}});
+$('#comboSelection').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.comboRemove!==undefined)comboSelection.splice(Number(b.dataset.comboRemove),1);for(const [attr,direction] of [['comboUp',-1],['comboDown',1]])if(b.dataset[attr]!==undefined){const i=Number(b.dataset[attr]),j=i+direction;if(j>=0&&j<comboSelection.length)[comboSelection[i],comboSelection[j]]=[comboSelection[j],comboSelection[i]];}renderComboSelection();});
+async function syncModels(id){if(!id)throw Error('Add and enable a provider key first');const r=await api('/models/discover',{accountId:id});toast(r.models.length?`Synced ${r.models.length} image models`:'No image models listed for this key');await refresh();}
+$('#syncModels').addEventListener('click',()=>submit($('#syncModels').parentElement,()=>syncModels($('#discoveryKey').value)));
+$('#closeTest').addEventListener('click',()=>$('#testDialog').close());
+$('#generateTest').addEventListener('click',async()=>{const button=$('#generateTest');if(!key()){toast('Create or select an app key first',true);return;}button.disabled=true;$('#testImage').hidden=true;$('#testImage').removeAttribute('src');$('#testDialog').showModal();$('#testResult').textContent='Generating one image…';const started=performance.now();try{const res=await fetch('/v1/images/generations',{method:'POST',headers:{'content-type':'application/json',authorization:'Bearer '+key()},body:JSON.stringify({model:$('#connectionModel').value,prompt:'A simple red square centered on a plain white background, no text.',n:1,response_format:'b64_json'})});const data=await res.json();if(!res.ok)throw Error(data.error?.message||data.error||`HTTP ${res.status}`);if(!data.data?.[0]?.b64_json)throw Error('No image returned');$('#testImage').src='data:image/png;base64,'+data.data[0].b64_json;$('#testImage').hidden=false;$('#testResult').textContent=`Success · ${data.model||$('#connectionModel').value} · ${((performance.now()-started)/1000).toFixed(1)}s`;$('#testSummary').textContent='Last test: image received';}catch(error){$('#testResult').textContent=error.message;$('#testSummary').textContent='Last test failed';}finally{button.disabled=false;await refresh();}});
+$('#providerSearch').addEventListener('input',renderProviders);
+function options(el,values,old,placeholder){el.innerHTML=values.length?values.map(([id,label])=>`<option value="${esc(id)}">${esc(label)}</option>`).join(''):`<option value="">${placeholder}</option>`;if(values.some(([id])=>id===old))el.value=old;}
+async function refresh(){if(busy)return;busy=true;try{const [status,accounts,keys]=await Promise.all([api('/status'),api('/accounts'),api('/clientkeys')]);providers=accounts.accounts;clients=keys.clientKeys;comboList=status.combos||[];modelList=(status.models||[]).map(m=>m.replace(/^models\//,''));$('#baseUrl').textContent=gatewayOrigin+'/v1';$('#geminiUrl').textContent=gatewayOrigin+'/v1beta';$('#healthyCount').textContent=status.healthyKeys;$('#successCount').textContent=status.requestStats?.success??0;$('#failedCount').textContent=status.requestStats?.failed??0;$('#generateTest').disabled=Boolean(status.mockMode);$('#testSummary').textContent=status.mockMode?'Unavailable in mock mode':$('#testSummary').textContent;options($('#connectionKey'),clients.map(k=>[k.id,k.label||'Unnamed app']),$('#connectionKey').value,'No keys · create a replacement below');options($('#connectionModel'),modelList.map(m=>[m,m+(m===status.defaultModel?' · default':'')]),$('#connectionModel').value,'No models');renderConnection();renderProviders();renderComboSelection();options($('#discoveryKey'),providers.filter(k=>k.status!=='disabled').map(k=>[k.id,k.label]),$('#discoveryKey').value,'No enabled provider keys');$('#clients').innerHTML=clients.length?clients.map(k=>`<div class="item"><div class="split"><b>${esc(k.label||'Unnamed app')}</b><button class="small danger" data-delete-client="${esc(k.id)}">Revoke</button></div><p class="hint">${k.uses} authenticated requests · ${k.lastUsedAt?'Last used '+esc(new Date(k.lastUsedAt).toLocaleString()):'Not used yet'}</p></div>`).join(''):'<div class="empty">Create a key for your first application.</div>';$('#combos').innerHTML=comboList.length?comboList.map(c=>`<div class="item"><div class="split"><b>${esc(c.name)}</b><button class="small danger" data-delete-combo="${esc(c.name)}">Remove</button></div><p class="note">${c.models.map(esc).join(' → ')}</p><p class="hint">Text-only fallback: ${c.fallback?'on':'off'} · Reference requests: first model only</p><button class="small" data-edit-combo="${esc(c.name)}">Edit</button></div>`).join(''):'<div class="empty">No combos yet. Your app can call the default model directly.</div>';$('#models').innerHTML=modelList.map(m=>`<div class="item split"><code class="key-value">${esc(m)}</code>${m===status.defaultModel?'<span class="badge">default</span>':(status.extraModels||[]).includes(m)?`<button class="small danger" data-delete-model="${esc(m)}">Remove</button>`:''}</div>`).join('');$('#logs').innerHTML=(status.requests||[]).length?status.requests.map(r=>`<tr><td>${esc(new Date(r.ts).toLocaleTimeString())}</td><td>${esc(r.requestedModel)}</td><td>${esc(r.actualModel)}</td><td>${esc(r.accountLabel||'—')}</td><td><span class="badge ${r.status===200?'ok':'err'}">${r.status}</span></td><td>${r.durationMs} ms</td><td class="reason">${esc(r.error||'—')}</td></tr>`).join(''):'<tr><td colspan="7">No provider requests yet.</td></tr>';$('#connection').textContent='Connected';$('#connection').className='status online';$('#error').hidden=true;}catch(e){$('#connection').textContent='Offline';$('#connection').className='status offline';$('#error').textContent='Could not refresh. Displayed information may be outdated. '+e.message;$('#error').hidden=false;}finally{busy=false;}}
+async function submit(form,action){const buttons=[...form.querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{await action();}catch(e){toast(e.message,true);}finally{buttons.forEach(b=>b.disabled=false);}}
+$('#providerForm').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{await api('/accounts',{label:$('#providerLabel').value.trim()||'Gemini key',apiKey:$('#providerKey').value.trim()});e.target.reset();toast('Provider key added');await refresh();});});
+$('#testProvider').addEventListener('click',()=>submit($('#providerForm'),async()=>{const value=$('#providerKey').value.trim();if(!value)throw Error('Enter a Gemini key first');const r=await api('/accounts/test',{apiKey:value});toast(r.message,!r.ok||r.hasImageModel===false);}));
+$('#bulkForm').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const r=await api('/accounts/bulk',{keys:$('#bulkKeys').value});e.target.reset();toast(`Added ${r.added} · skipped ${r.skipped} · invalid ${r.invalid?.length||0}`);await refresh();});});
+$('#clientForm').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{const r=await api('/clientkeys',{label:$('#clientLabel').value.trim()});e.target.reset();$('#newKey').textContent=r.key;$('#keyDialog').showModal();await refresh();$('#connectionKey').value=r.id;renderConnection();});});
+$('#modelForm').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{await api('/models',{model:$('#modelId').value.trim()});e.target.reset();toast('Model added');await refresh();});});
+$('#comboForm').addEventListener('submit',e=>{e.preventDefault();submit(e.target,async()=>{if(!comboSelection.length)throw Error('Add at least one model to the combo');await api('/combos',{name:$('#comboName').value.trim(),models:comboSelection,fallback:$('#comboFallback').checked});e.target.reset();comboSelection=[];renderComboSelection();toast('Combo saved');await refresh();});});
+document.addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;try{if(b.dataset.toggleProvider){b.disabled=true;const k=providers.find(k=>k.id===b.dataset.toggleProvider);await api('/accounts/'+encodeURIComponent(k.id)+'/enabled',{enabled:k.status==='disabled'});await refresh();return;}if(b.dataset.syncKey){b.disabled=true;await syncModels(b.dataset.syncKey);return;}if(b.dataset.editCombo){const c=comboList.find(c=>c.name===b.dataset.editCombo);$('#comboName').value=c.name;comboSelection=[...c.models];renderComboSelection();$('#comboFallback').checked=c.fallback;$('#comboName').focus();return;}if(b.dataset.test){b.disabled=true;const r=await api('/accounts/test',{id:b.dataset.test});toast(r.message,!r.ok||r.hasImageModel===false);}for(const [attr,route,label] of [['deleteProvider','/accounts/','Remove this provider key?'],['deleteClient','/clientkeys/','Revoke this application key?'],['deleteCombo','/combos/','Remove this combo?'],['deleteModel','/models/','Remove this model?']]){if(b.dataset[attr]&&confirm(label)){b.disabled=true;await api(route+encodeURIComponent(b.dataset[attr]),{},'DELETE');toast('Removed');await refresh();}}}catch(error){toast(error.message,true);}finally{b.disabled=false;}});
+if(clients.length) options($('#connectionKey'),clients.map(k=>[k.id,k.label||'App']),'','');
+if(boot.defaultModel) options($('#connectionModel'),[[boot.defaultModel,boot.defaultModel]],'','');
+renderConnection();
+$('#refresh').addEventListener('click',refresh);setInterval(()=>{if($('#live').checked)refresh();},5000);refresh();
 </script>
-</body>
-</html>
+</body></html>
