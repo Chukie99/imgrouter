@@ -37,6 +37,22 @@ assert.equal((await request('/models/gemini-added-image',{}, {method:'DELETE'}))
 assert.equal((await request('/models/gemini-2.5-flash-image',{}, {method:'DELETE'})).status,400);
 const account=createAccount('provider one','provider-secret-1',5);
 const other=createAccount('provider two','provider-secret-2',5);
+assert.equal((await request(`/accounts/${account.id}/enabled`,{enabled:false})).status,200);
+assert.equal(getAccount(account.id)!.status,'disabled');
+assert.equal((await request(`/accounts/${account.id}/enabled`,{enabled:true})).status,200);
+assert.equal(getAccount(account.id)!.status,'active');
+updateAccount(account.id,{status:'blocked',resetAt:Date.now()+60000});
+await request(`/accounts/${account.id}/enabled`,{enabled:false});
+await request(`/accounts/${account.id}/enabled`,{enabled:true});
+assert.equal(getAccount(account.id)!.status,'blocked','enable does not bypass a provider quota block');
+updateAccount(account.id,{status:'active',resetAt:null});
+provider=()=>new Response(JSON.stringify({models:[{name:'models/gemini-discovered-image',supportedGenerationMethods:['generateContent']},{name:'models/gemini-text-model',supportedGenerationMethods:['generateContent']}]}),{status:200});
+const discovery=await request('/models/discover',{accountId:account.id});assert.equal(discovery.status,200);assert.deepEqual(discovery.body.models,['gemini-discovered-image']);
+await request(`/accounts/${account.id}/enabled`,{enabled:false});
+assert.equal((await request('/models/discover',{accountId:account.id})).status,400);
+await request(`/accounts/${account.id}/enabled`,{enabled:true});
+provider=()=>new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:{mimeType:'image/png',data:MOCK_PNG_B64}}]}}]}),{status:200});
+
 const client=await request('/clientkeys',{label:'app'});assert.equal(client.status,201);const key=client.body.key;
 const dashboard=await request('/');
 assert.ok(dashboard.raw.includes('id="gatewayBootstrap"'));
@@ -57,11 +73,11 @@ assert.equal(result.status,200);assert.equal(result.body.model,model);assert.dee
 assert.ok(called[0]!.url.endsWith(model+':generateContent'));assert.ok(!called[0]!.url.includes('provider-secret'));
 assert.equal(called[0]!.body.allow_model_fallback,undefined);
 assert.ok(getAccount(account.id)!.dayUsed+getAccount(other.id)!.dayUsed>100,'usage beyond 5 is permitted in provider-managed mode');
-called=[];provider=(_u,_b,k)=>k==='provider-secret-1'?new Response(JSON.stringify({error:{message:'rate limited'}}),{status:429}):new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:ref}]}}]}),{status:200});
+called=[];provider=(_u,_b,k)=>k==='provider-secret-1'?new Response(JSON.stringify({error:{message:'rate limited provider-secret-1 '+MOCK_PNG_B64+' scene three'}}),{status:429}):new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:ref}]}}]}),{status:200});
 updateAccount(account.id,{lastUsedAt:0,cooldownUntil:null});updateAccount(other.id,{lastUsedAt:100,cooldownUntil:null});
 result=await request('/v1/images/edits',{model:'characters',prompt:'scene three',image:`data:image/png;base64,${MOCK_PNG_B64}`},{key});
 assert.equal(result.status,200);assert.equal(called.length,2);assert.notEqual(called[0]!.key,called[1]!.key);assert.deepEqual(called[0]!.body,called[1]!.body,'references and prompt survive key rotation');
-called=[];provider=()=>new Response(JSON.stringify({error:{message:'rate limited'}}),{status:429});
+called=[];provider=()=>new Response(JSON.stringify({error:{message:'rate limited provider-secret-1 '+MOCK_PNG_B64+' scene three'}}),{status:429});
 updateAccount(account.id,{cooldownUntil:null});updateAccount(other.id,{cooldownUntil:null});
 result=await request('/v1/images/generations',{model:'characters',prompt:'scene four',reference_images:[ref]},{key});assert.equal(result.status,429);assert.ok(called.every(c=>c.url.includes(model+':')),'reference requests never switch model');
 called=[];provider=url=>url.includes(model+':')?new Response(JSON.stringify({error:{message:'unavailable'}}),{status:503}):new Response(JSON.stringify({candidates:[{content:{parts:[{inlineData:ref}]}}]}),{status:200});
@@ -79,7 +95,9 @@ result=await request('/v1beta/models/characters:generateContent',native,{key});a
 // Daily reset also clears counters on healthy keys, not only blocked keys.
 updateAccount(account.id,{dayUsed:90,resetAt:Date.now()-1,cooldownUntil:null});
 await request('/v1/images/generations',{prompt:'x'},{key});assert.ok(getAccount(account.id)!.dayUsed<90);
-const logs=await request('/logs');assert.ok(logs.body.requests.length>0);assert.ok(!logs.raw.includes('provider-secret'));assert.ok(!logs.raw.includes(MOCK_PNG_B64));assert.ok(!logs.raw.includes('Next scene'));
+provider=()=>new Response(JSON.stringify({candidates:[{content:{parts:[{text:'blocked'}]}}]}),{status:200});
+assert.equal((await request('/v1/images/generations',{prompt:'x'},{key})).status,502,'text-only success response is an image failure');
+const logs=await request('/logs');assert.ok(logs.body.requests.length>0);assert.ok(logs.body.requests.some((r:any)=>r.accountLabel==='provider one'));assert.ok(logs.body.requests.some((r:any)=>r.error?.includes('rate limited')));assert.ok((await request('/status')).body.requestStats.failed>0);assert.ok(!logs.raw.includes('provider-secret'));assert.ok(!logs.raw.includes(MOCK_PNG_B64));assert.ok(!logs.raw.includes('Next scene'));
 assert.ok(defaultResetAt()>Date.now());
 console.log('PASS: gateway auth/local admin, combo persistence/discovery, provider quota mode, reference preservation across key rotation, model pinning, opt-in text fallback, native signature passthrough, input rejection, rollover, private request logs. Simulated upstream, no live Gemini calls.');
 db.close();fs.rmSync(dir,{recursive:true,force:true});

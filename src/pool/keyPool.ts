@@ -1,3 +1,4 @@
+import { setSetting } from "../db/settings.js";
 import { config } from "../config.js";
 import { getAccount, listAccounts, logQuota, updateAccount } from "../db/accounts.js";
 import type { Account } from "../db/types.js";
@@ -112,10 +113,11 @@ export async function reportQuotaExhausted(id: string, resetAtMs?: number): Prom
     const account = getAccount(id);
     if (!account) return;
     const observed = account.dayUsed;
+    if(account.status === "disabled")setSetting(`disabledStatus:${id}`,"blocked");
     // Learn the real per-key daily limit: shrink toward the observed success count.
     const learnedLimit = observed > 0 ? Math.min(account.dayLimit, observed) : account.dayLimit;
     updateAccount(id, {
-      status: "blocked",
+      status: account.status === "disabled" ? "disabled" : "blocked",
       resetAt: resetAtMs ?? defaultResetAt(),
       dayLimit: learnedLimit,
     });

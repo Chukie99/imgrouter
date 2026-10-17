@@ -70,7 +70,7 @@ Normal mode uses **provider-managed quota** (`PROVIDER_MANAGED_QUOTA=true`). The
 
 `RPM_PER_KEY` and `MAX_INFLIGHT_PER_KEY` provide local pacing. `MAX_ATTEMPTS` caps retries within a model. Healthy-key daily counters reset at the configured provider day boundary. `RESET_TZ_OFFSET_MINUTES` is a fixed UTC offset, so adjust it when necessary; it is not a daylight-saving timezone database.
 
-Request logs keep the latest 1,000 provider calls and show the latest 100. They store time, requested model, actual model, HTTP status, and duration. They do not store prompts, reference bytes, or secret keys. Provider credentials and client keys are stored in the local SQLite database; protect that file.
+Request logs keep the latest 1,000 provider attempts and show the latest 100. Each key retry gets its own row: requested/actual model, provider key label, HTTP status, duration, and a sanitized failure reason. Summary counts cover the retained 1,000 attempts. Secret keys and request prompt/reference values are redacted from recorded errors. Provider credentials and client keys are stored in the local SQLite database; protect that file.
 
 ## Validation
 
@@ -81,3 +81,13 @@ npm run smoke
 ```
 
 Gateway tests use simulated provider responses and exercise the actual HTTP routing function without binding a port. They cover authentication, local administration restrictions, combo discovery, reference preservation across key retries, model pinning, fallback, provider-managed quotas, rollover, and private logs. The legacy smoke suite retains coverage of dormant scene scheduling helpers. Neither suite proves live Gemini access or visual character consistency. Live generation requires your own authorized provider key and quota.
+
+## Desktop controls
+
+Provider keys are shown in a compact table with Enable/Disable, access check, model sync, and removal. Disabling preserves cooldown and provider daily-quota blocks; enabling does not reset either. Use **Sync from Gemini** to discover model IDs containing `image` that support `generateContent`. Other Gemini models and Imagen-specific endpoints are not added. Discovery does not prove remaining quota or paid image access. Manual model IDs are under advanced details.
+
+Combo models are selected from configured/discovered model routes, then reordered with up/down controls. Model aliases remain separate from client keys.
+
+**Test image generation** in Overview sends one actual request through `/v1/images/generations`, using the selected imgrouter client key and model/combo. It uses provider quota and displays the returned image, actual model, time, or error. It never runs automatically, and is disabled in mock mode. No live provider test was executed during development because no authorized Gemini credential was supplied.
+
+A standalone desktop preview with fictional keys, models and in-memory actions is included at `preview/imgrouter-desktop-sample.html`. It never calls Gemini or consumes quota; its test image is only a sample.

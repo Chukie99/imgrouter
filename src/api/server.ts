@@ -1,5 +1,6 @@
+import { discoverModels } from "../gateway/catalog.js";
 import { combos, saveCombo, deleteCombo, extraModels, addModel, removeModel } from "../gateway/models.js";
-import { recentRequests } from "../gateway/logs.js";
+import { recentRequests, requestStats } from "../gateway/logs.js";
 import fs from "node:fs";
 import path from "node:path";
 import { createServer } from "node:http";
@@ -12,6 +13,7 @@ import {
   deleteAccount,
   deleteAccounts,
   deleteAccountsByStatus,
+  updateAccount,
   getAccount,
   listAccounts,
 } from "../db/accounts.js";
@@ -20,7 +22,7 @@ import { testApiKey } from "../worker/generator.js";
 import { createClientKey, deleteClientKey, findClientKey, listClientKeys, touchClientKey } from "../db/clientKeys.js";
 import { listModels, proxyGenerateContent } from "../gateway/proxy.js";
 import { listOpenAIModels, openAIImageGeneration } from "../gateway/openai.js";
-import { requireApiKey, setRequireApiKey } from "../db/settings.js";
+import { requireApiKey, setRequireApiKey, getSetting, setSetting } from "../db/settings.js";
 import * as keyPool from "../pool/keyPool.js";
 import type { Account, AccountStatus } from "../db/types.js";
 
@@ -180,10 +182,18 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
       defaultModel: config.geminiImageModel,
       extraModels: extraModels(),
       requests: recentRequests(),
+      requestStats: requestStats(),
+      mockMode: Boolean(config.mockGemini),
     });
     return;
   }
 
+  if(method === "POST" && url.pathname === "/models/discover") {
+    const body=await readJson(req);
+    try { const models=await discoverModels(String(body.accountId??''));json(res,200,{models}); }
+    catch(error) { json(res,400,{error:(error as Error).message}); }
+    return;
+  }
   if (segments[0] === "models") {
     if (method === "GET") { json(res, 200, { defaultModel: config.geminiImageModel, models: extraModels() }); return; }
     if (method === "POST") {
@@ -349,6 +359,16 @@ export async function route(req: IncomingMessage, res: ServerResponse): Promise<
       deleteAccount(segments[1]);
       json(res, 200, { deleted: segments[1] });
       return;
+    }
+    if(method === "POST" && segments.length===3 && segments[2]==="enabled" && segments[1]) {
+      const body=await readJson(req);const account=getAccount(segments[1]);
+      if(!account){json(res,404,{error:"Provider key not found"});return;}
+      if(typeof body.enabled!=="boolean"){json(res,400,{error:"enabled must be a boolean"});return;}
+      // Preserve provider quota/cooldown when re-enabling; enabling does not reset quota.
+      const saved=getSetting(`disabledStatus:${account.id}`);
+      if(!body.enabled&&account.status!=="disabled")setSetting(`disabledStatus:${account.id}`,account.status);
+      const status=body.enabled?(saved==="blocked"&&account.resetAt!=null&&account.resetAt>Date.now()?"blocked":"active"):"disabled";
+      updateAccount(account.id,{status});json(res,200,{account:maskAccount(getAccount(account.id)!)});return;
     }
     // POST /accounts/bulk — paste many keys at once
     if (method === "POST" && segments.length === 2 && segments[1] === "bulk") {
